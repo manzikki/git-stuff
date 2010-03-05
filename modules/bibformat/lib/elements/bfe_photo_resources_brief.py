@@ -20,6 +20,12 @@
 """
 __revision__ = "$Id$"
 
+from invenio.config import CFG_SITE_URL
+
+# variables :
+CFG_GIFT_QUERY = CFG_SITE_URL + '/search?ln=fr&p=imgURL:'
+CFG_RANK_METHOD = '&rm=img'
+
 def format(bfo):
     """
     Prints html image and link to photo resources.
@@ -34,7 +40,7 @@ def format(bfo):
             out += '<a href="'+CFG_SITE_URL+'/record/'+bfo.control_field("001")+ \
                    '?ln='+ bfo.lang + '"><img src="' + resource.get("q", "").replace(" ","") \
                    + '" alt="" border="0"/></a>'
-
+			out += '<br/> <a href="' + CFG_GIFT_QUERY + resource.get("q", "").replace(" ","") + CFG_RANK_METHOD + '"> find similar images </a>'
     return out
 
 def escape_values(bfo):

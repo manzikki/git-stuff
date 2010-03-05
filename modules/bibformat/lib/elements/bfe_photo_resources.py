@@ -20,6 +20,13 @@
 """
 __revision__ = "$Id$"
 
+from invenio.config import CFG_SITE_URL
+
+# variables :
+CFG_GIFT_QUERY = CFG_SITE_URL + '/search?ln=fr&p=imgURL:'
+CFG_RANK_METHOD = '&rm=img'
+
+
 def format(bfo):
     """
     Prints html image and link to photo resources.
@@ -31,9 +38,11 @@ def format(bfo):
 
         if resource.get("x", "") == "icon" and resource.get("u", "") == "":
             out += '<br /><br /><img src="' + resource.get("q", "").replace(" ","") + '" alt="" />'
+			out += '<br /><br /><a href="'+CFG_GIFT_QUERY+resource.get("q", "").replace(" ","")+CFG_RANK_METHOD+'"> find similar images </a>'
 
         if resource.get("x", "") == "1":
             out += '<br />High resolution: <a href="'+resource.get("q", "") +'">'+ resource.get("q", "") +"</a>"
+			out += '<br /><br /><a href="'+CFG_GIFT_QUERY+resource.get("q", "").replace(" ","")+CFG_RANK_METHOD+'"> find similar images </a>'
 
     out += '<br /><font size="-2"><b>© CERN Geneva</b></font>'
     out += '<br /> <a href="'+bfo.field("8564_u")+'">'+ bfo.field("8564_z") + "</a>"
