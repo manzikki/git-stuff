@@ -21,6 +21,7 @@
 __revision__ = "$Id$"
 
 from invenio.config import CFG_SITE_URL
+from invenio.config import CFG_BIBRANK_ALLOW_GIFT
 
 # variables :
 CFG_GIFT_QUERY = CFG_SITE_URL + '/search?ln=fr&p=imgURL:'
@@ -35,12 +36,12 @@ def format(bfo):
     resources = bfo.fields("8564_")
     out = ""
     for resource in resources:
-
         if resource.get("x", "") == "icon" and resource.get("u", "") == "":
             out += '<a href="'+CFG_SITE_URL+'/record/'+bfo.control_field("001")+ \
                    '?ln='+ bfo.lang + '"><img src="' + resource.get("q", "").replace(" ","") \
                    + '" alt="" border="0"/></a>'
-			out += '<br/> <a href="' + CFG_GIFT_QUERY + resource.get("q", "").replace(" ","") + CFG_RANK_METHOD + '"> find similar images </a>'
+            if CFG_BIBRANK_ALLOW_GIFT:
+                out += '<br/> <a href="' + CFG_GIFT_QUERY + resource.get("q", "").replace(" ","") + CFG_RANK_METHOD + '"> find similar images </a>'
     return out
 
 def escape_values(bfo):

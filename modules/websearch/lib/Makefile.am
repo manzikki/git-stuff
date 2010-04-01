@@ -40,6 +40,10 @@ pylib_DATA = \
 	websearch_external_collections_tests.py \
 	websearch_external_collections_utils.py 
 
-EXTRA_DIST = $(pylib_DATA)
+perllibdir = $(libdir)/perl
+
+perllib_DATA = gift_query_by_imgurl.pl
+
+EXTRA_DIST = $(pylib_DATA) $(perllib_DATA)
 
 CLEANFILES = *~ *.tmp *.pyc

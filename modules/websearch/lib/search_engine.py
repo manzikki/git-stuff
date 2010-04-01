@@ -4089,31 +4089,6 @@ def perform_request_search(req=None, cc=CFG_SITE_NAME, c=None, p="", f="", rg=10
     # wash output format:
     of = wash_output_format(of)
 
-	# FIXME: jump to another page after query search
-	# ====================================== GnuIFT added code start here =========================================
-    of = "hb"
-    _ = gettext_set_language(ln)
-
-    if p.startswith("imgURL:") and rm == "img":
-        imgurl = p[7:]
-	executable_line = "/opt/cds-invenio/lib/perl/gift_query_by_imgurl.pl "+imgurl
-	output = subprocess.Popen(["/opt/cds-invenio/lib/perl/gift_query_by_imgurl.pl", imgurl], stdout=subprocess.PIPE)
-	lines = string.split(output.communicate()[0],'\n')
-	# raise repr(lines)
-	lines.reverse()
-	results_gift_recIDs = []
-	results_gift_rels = []
-	for line in lines:
-	    if (line):
-	        ans = string.split(line)
-	        results_gift_recIDs.append(int(ans[0]))
-	        results_gift_rels.append(float(ans[1]))
-        page_start(req, of, cc, as, ln, getUid(req), _("Search Results"))
-	# raise repr(results_gift_recIDs)
-	print_records(req, results_gift_recIDs, -1, -9999, of, ot, ln, results_gift_rels, search_pattern=p, verbose=verbose)
-        return page_end(req, of, ln)
-	# ====================================== GnuIFT added code end here ===========================================
-
     # raise an exception when trying to print out html from the cli
     if of.startswith("h"):
         assert req
@@ -4251,6 +4226,33 @@ def perform_request_search(req=None, cc=CFG_SITE_NAME, c=None, p="", f="", rg=10
                 print_records_prologue(req, of)
                 print_records_epilogue(req, of)
             return page_end(req, of, ln)
+
+    # FIXME: jump to another page after query search
+    # ====================================== GnuIFT added code start here =========================================
+    # _ = gettext_set_language(ln)
+    elif rm == "img" and p.startswith("imgURL:"):
+        imgurl = p[7:]
+        of = "hb"
+        # executable_line = "/opt/cds-invenio/lib/perl/gift_query_by_imgurl.pl " + imgurl
+        output = subprocess.Popen(["/opt/cds-invenio/lib/perl/gift_query_by_imgurl.pl", imgurl], stdout=subprocess.PIPE)
+        lines = string.split(output.communicate()[0], '\n')
+        # raise repr(lines)
+
+        lines.reverse()
+        results_gift_recIDs = []
+        results_gift_rels = []
+
+        for line in lines:
+            if (line):
+                ans = string.split(line)
+                results_gift_recIDs.append(int(ans[0]))
+                results_gift_rels.append(float(ans[1]))
+
+        page_start(req, of, cc, aas, ln, getUid(req), _("Search Results"))
+        # raise repr(results_gift_recIDs)
+        print_records(req, results_gift_recIDs, -1, -9999, of, ot, ln, results_gift_rels, search_pattern=p, verbose=verbose)
+        # return page_end(req, of, ln)
+    # ====================================== GnuIFT added code end here ===========================================
 
     elif rm and p.startswith("recid:"):
         ## 3-ter - similarity search or citation search needed

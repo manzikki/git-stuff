@@ -4,7 +4,6 @@ use strict;
 use POSIX qw(WNOHANG);
 # use lib "/usr/local/bin/"; # for including CFeedbackClient
 use lib "/usr/share/perl5/GIFT/"; # for including CFeedbackClient
-use lib "D:/workarea/ImageCLEFperl/gift-bin/";
 use lib '/usr/lib/perl5/site_perl/5.005/i586-linux/';
 use CFeedbackClient; # to make a query in MRML
 

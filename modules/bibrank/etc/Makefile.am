@@ -36,7 +36,8 @@ etc_DATA = bibrankgkb.cfg \
            citation.cfg \
            citerank_citation_t.cfg \
            citerank_pagerank_c.cfg \
-           citerank_pagerank_t.cfg
+           citerank_pagerank_t.cfg \
+           gift_indexer.cfg
 
 EXTRA_DIST = bibrankgkb.cfg.in \
              bibrankgkb_jif_conv.kb \
@@ -57,6 +58,7 @@ EXTRA_DIST = bibrankgkb.cfg.in \
              citation.cfg \
              citerank_citation_t.cfg \
              citerank_pagerank_c.cfg \
-             citerank_pagerank_t.cfg
+             citerank_pagerank_t.cfg \
+             gift_indexer.cfg
 
 CLEANFILES = *~ *.tmp

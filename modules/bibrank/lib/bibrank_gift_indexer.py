@@ -46,12 +46,12 @@ tmp_fts = CFG_TMPDIR+"/gift_tmp.fts"
 
 #FIXME: add gift server stop and start
 # 		make the port used for gift parametrable
-def gift_indexer_run(tag):
+def gift_indexer(tag):
     """Rank by the Gnu Image Finding Tools."""
     urls = []
     recids=[]
     op = task_get_option("quick")
-    rank_method_code = "GIFTindexer"
+    rank_method_code = "gift_indexer"
 
     print op
     print CFG_GIFTINDEX_PREFIX
@@ -149,17 +149,17 @@ def generate_gift_config_file(num_img):
     configET.write(CFG_PATH_GIFTCONFIG, "UTF-8")
     replace_in_files(CFG_PATH_GIFTCONFIG, r'''__COLLECTION__''', r'''invenio''')
 
-def get_cited_by(recordid):
-    """Return a list of records that cite recordid"""
-    ret = []
-    cache_cited_by_dictionary = get_citation_dict("citationdict")
-    if cache_cited_by_dictionary.has_key(recordid):
-        ret = cache_cited_by_dictionary[recordid]
-    return ret
-
-def gift_update_image_list():
-       result = find_citations(rank_method_code, p, hitset, verbose)
-
+#def get_cited_by(recordid):
+#    """Return a list of records that cite recordid"""
+#    ret = []
+#    cache_cited_by_dictionary = get_citation_dict("citationdict")
+#    if cache_cited_by_dictionary.has_key(recordid):
+#        ret = cache_cited_by_dictionary[recordid]
+#    return ret
+#
+#def gift_update_image_list():
+#       result = find_citations(rank_method_code, p, hitset, verbose)
+#
 #def get_lastupdated(rank_method_code):
 #    """Get the last time the rank method was updated"""
 #    res = run_sql("SELECT rnkMETHOD.last_updated FROM rnkMETHOD WHERE name=%s", (rank_method_code, ))
