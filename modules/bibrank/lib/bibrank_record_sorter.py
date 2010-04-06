@@ -84,7 +84,12 @@ def create_rnkmethod_cache():
         if config.has_section(cfg_function):
             methods[rank_method_code] = {}
             methods[rank_method_code]["function"] = cfg_function
-            methods[rank_method_code]["prefix"] = config.get(cfg_function, "relevance_number_output_prologue")
+            methods[rank_method_code]["prefix"] = '('
+            try:
+                methods[rank_method_code]["prefix"] = config.get(cfg_function, "relevance_number_output_prologue")
+            except:
+                pass
+            # methods[rank_method_code]["prefix"] = config.get(cfg_function, "relevance_number_output_prologue")
             methods[rank_method_code]["postfix"] = config.get(cfg_function, "relevance_number_output_epilogue")
             methods[rank_method_code]["chars_alphanumericseparators"] = r"[1234567890\!\"\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\`\{\|\}\~]"
         else:
