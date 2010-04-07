@@ -1487,7 +1487,7 @@ INSERT INTO collection_rnkMETHOD (id_collection,id_rnkMETHOD,score) VALUES (15,2
 INSERT INTO rnkMETHOD (id,name,last_updated) VALUES (3,'citation','0000-00-00 00:00:00');
 INSERT INTO collection_rnkMETHOD (id_collection,id_rnkMETHOD,score) VALUES (15,3,90);
 
-INSERT INTO rnkMETHOD (id,name,last_updated) VALUES (4,'gift_indexer','0000-00-00 00:00:00');
+INSERT INTO rnkMETHOD (id,name,last_updated) VALUES (4,'img','0000-00-00 00:00:00');
 INSERT INTO collection_rnkMETHOD (id_collection,id_rnkMETHOD,score) VALUES (8,4,1);
 
 INSERT INTO externalcollection (id, name) VALUES (1, 'Amazon');

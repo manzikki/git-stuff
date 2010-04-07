@@ -469,7 +469,8 @@ def cli_cmd_reset_fieldnames(conf):
         ## ditto for rank methods:
         rankmethod_name_names = {"wrd": _("word similarity"),
                                  "demo_jif": _("journal impact factor"),
-                                 "citation": _("times cited"),}
+                                 "citation": _("times cited"),
+                                 "img": _("image similarity")}
         for (rankmethod_id, rankmethod_name) in rankmethod_id_name_list:
             try:
                 run_sql("""INSERT INTO rnkMETHODNAME (id_rnkMETHOD,ln,type,value) VALUES

@@ -51,7 +51,7 @@ def gift_indexer(tag):
     urls = []
     recids=[]
     op = task_get_option("quick")
-    rank_method_code = "gift_indexer"
+    rank_method_code = "img"
 
     print op
     print CFG_GIFTINDEX_PREFIX

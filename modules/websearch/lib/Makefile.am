@@ -42,8 +42,8 @@ pylib_DATA = \
 
 perllibdir = $(libdir)/perl
 
-perllib_DATA = gift_query_by_imgurl.pl
+perllib_SCRIPTS = gift_query_by_imgurl.pl
 
-EXTRA_DIST = $(pylib_DATA) $(perllib_DATA)
+EXTRA_DIST = $(pylib_DATA) $(perllib_SCRIPTS)
 
 CLEANFILES = *~ *.tmp *.pyc
