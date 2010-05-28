@@ -29,7 +29,7 @@ from invenio.search_engine import perform_request_search
 from invenio.search_engine import get_fieldvalues
 from invenio.bibtask import task_get_option
 from invenio.dbquery import run_sql
-from invenio.config import CFG_PREFIX, CFG_TMPDIR, CFG_PATH_WGET
+from invenio.config import CFG_PREFIX, CFG_TMPDIR, CFG_PATH_WGET, CFG_CERN_SITE
 
 # variables :
 CFG_GIFTINDEX_PREFIX = CFG_PREFIX + "/var/gift-index-data"
@@ -44,32 +44,58 @@ CFG_PATH_CONVERT = "/usr/bin/convert"
 tmp_ppm = CFG_TMPDIR+"/gift_tmp.ppm"
 tmp_fts = CFG_TMPDIR+"/gift_tmp.fts"
 
+ext2conttype = {"jpg": "image/jpeg",
+                "jpeg": "image/jpeg",
+                "png": "image/png",
+                "gif": "image/gif"}
+imgurl2recid = {}
+
+redirect_handler = urllib2.HTTPRedirectHandler()
+class MyHTTPRedirectHandler(urllib2.HTTPRedirectHandler):
+    def http_error_302(self, req, fp, code, msg, headers):
+        print "Cookie Manip Right Here"
+        return urllib2.HTTPRedirectHandler.http_error_302(self, req, fp, code, msg, headers)
+    http_error_301 = http_error_303 = http_error_307 = http_error_302
+
+cookieprocessor = urllib2.HTTPCookieProcessor()
+
+opener = urllib2.build_opener(MyHTTPRedirectHandler, cookieprocessor)
+urllib2.install_opener(opener)
+
 #FIXME: add gift server stop and start
-# 		make the port used for gift parametrable
+#               make the port used for gift parametrable
 def gift_indexer(tag):
     """Rank by the Gnu Image Finding Tools."""
     urls = []
-    recids=[]
+    imgurl2recid = {}
+    recids_8564 = []
+    recids_8567 = []
     op = task_get_option("quick")
     rank_method_code = "img"
+    os.system("killall -9 gift")
 
     print op
     print CFG_GIFTINDEX_PREFIX
     print CFG_GIFTCONFIG_PREFIX
+    recids_8564 = perform_request_search(p='8564_x:icon')
+    if CFG_CERN_SITE :
+        recids_8567 = perform_request_search(p='8567_x:jpgIcon')
 
     if op and op=="no":
-        DU.remove_tree(CFG_GIFTINDEX_PREFIX)
-        recids = perform_request_search(p='8564_x:icon')
+        if os.path.isdir(CFG_GIFTINDEX_PREFIX):
+            DU.remove_tree(CFG_GIFTINDEX_PREFIX)
     else:
         last_updated = get_bibrankmethod_lastupdate(rank_method_code)
         print last_updated
-        #last_updated = get_bibrankmethod_lastupdate(rank_method_code)
-        recids = get_last_modified_rec(last_updated)
+        modified_recids = get_last_modified_rec(last_updated)
+        recids_8564 = list(Set(recids_8564)&Set(modified_recids))
+        if CFG_CERN_SITE :
+            recids_8567 = list(Set(recids_8567)&Set(modified_recids))
 
-    for recid in recids:
-        urls.extend(get_fieldvalues(recid, '8564_q'))
-        #urls.extend(get_fieldvalues(recid, tag))
-
+    imgurl2recid.update(add_url_recid(recids_8564, '8564_q'))
+    if CFG_CERN_SITE :
+        imgurl2recid.update(add_url_recid(recids_8567, '8567_u'))
+    print len(imgurl2recid.keys())
     DU.mkpath(CFG_GIFTINDEX_PREFIX)
     DU.mkpath(CFG_GIFTCONFIG_PREFIX)
 
@@ -87,13 +113,13 @@ def gift_indexer(tag):
     for xmlnode in xmlnodes:
         print xmlnode.attrib["url-postfix"]
         urllist.append(xmlnode.attrib["url-postfix"])
-
-    for url in urls:
+    print len(imgurl2recid.keys())
+    for url in imgurl2recid.keys():
         if url not in urllist:
             ftfname = extract_features(url)
             imagexml = ET.SubElement(imagelist,'image')
             imagexml.set("url-postfix", url)
-            imagexml.set("thumbnail-url-postfix", url)
+            imagexml.set("thumbnail-url-postfix", imgurl2recid[url])
             imagexml.set("feature-file-name", ftfname)
 
     print CFG_PATH_URL2FTS+"----------"
@@ -107,15 +133,41 @@ def gift_indexer(tag):
     ndate = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     run_sql("UPDATE rnkMETHOD SET last_updated=%s WHERE name=%s",
             (ndate, rank_method_code))
+    #os.system("gift --port 12700 --datadir "+CFG_GIFTCONFIG_PREFIX+" &")
 
+def is_image(filename):
+    """true if the filename's extension is in the content-type lookup"""
+    filename = filename.lower()
+    return filename[filename.rfind(".")+1:] in ext2conttype
+
+def add_url_recid(recids, fieldname):
+    tmp_dict = {}
+    print len(recids)
+    print "fieldname: %s\n" %fieldname
+    for recid in recids:
+        urls = get_fieldvalues(recid, fieldname)
+        for url in urls:
+            if is_image(url):
+                if CFG_CERN_SITE and \
+                    ('documents.cern.ch' in url or \
+                    'doc.cern.ch' in url or \
+                    'preprints.cern.ch' in url):
+                    print url
+                else:
+                    tmp_dict[url]=recid
+    print len(tmp_dict.keys())
+    return tmp_dict
+    
 def extract_features(url):
     print url+'\n'
     urlsegs = url.split("/")
     filename= urlsegs[len(urlsegs)-1]
     print "filename: %s\n" %filename
     tmp_img = CFG_TMPDIR+"/"+filename
-    urllib.urlretrieve(url,tmp_img)
-    #system(CFG_PATH_WGET + " -P "+CFG_TMPDIR+" "+url)
+    f_resp = urllib2.urlopen(url)
+    urllib.urlretrieve(f_resp.geturl(),tmp_img)
+    f_resp.close()
+    #os.system(CFG_PATH_WGET + " -P "+CFG_TMPDIR+" "+url)
     os.system(CFG_PATH_CONVERT+" -geometry 256x256! "+tmp_img+" "+tmp_ppm)
     os.system(CFG_PATH_GIFTFTSEXTRACT+" "+tmp_ppm)
     featurefilename = CFG_GIFTINDEX_PREFIX+"/"+filename+".fts"

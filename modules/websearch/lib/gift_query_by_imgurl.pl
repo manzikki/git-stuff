@@ -8,15 +8,16 @@ use lib '/usr/lib/perl5/site_perl/5.005/i586-linux/';
 use CFeedbackClient; # to make a query in MRML
 
 my $lFeedbackClient = new CFeedbackClient();
-my $DIRPrefix = "/home/xmzh/public_html/Fracture\_v2009";
+my $DIRPrefix = "/opt/cds-invenio/var/gift-index-data";
+my $url2fts = "/opt/cds-invenio/var/gift-index-data/url2fts.xml";
+
 my @dir_files = <$DIRPrefix/*>;
 my $URLPrefix = "http://arcgift.unige.ch/~xmzh/Fracture\_v2009";
 my $thumbURLPrefix = "http://arcgift.unige.ch/~xmzh/Image_thumbnails/Fracture\_v2009\_thumbnails";
 my $thumbURLPostfix= "\_thumbnail\_jpg.jpg";
-
 my $resultDir = "/home/xmzh/results/caseRetrieval";
 my $randomlist = "/home/xmzh/results/randomlist.txt";
-my $output = "/home/xmzh/results/resultlist.txt";
+
 my $range = scalar @dir_files;
 my @cases = ();
 
@@ -138,7 +139,13 @@ sub query_regrouped_by_max{
   }
 }
 
-sub get_recids
+sub translate_url_recid
+{
+  my $url = shift;
+  
+}
+
+sub list_recids
 {
   my @key = sort { $distTable{$b} <=> $distTable{$a} } keys %distTable;
   my $keynb = scalar @key;
@@ -153,4 +160,4 @@ sub get_recids
 
 configure_gift_client;
 query_regrouped_by_max($ARGV[0]);
-get_recids;
+list_recids;
