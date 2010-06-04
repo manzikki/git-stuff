@@ -2,6 +2,7 @@
 
 use strict;
 use POSIX qw(WNOHANG);
+use XML::Simple;
 # use lib "/usr/local/bin/"; # for including CFeedbackClient
 use lib "/usr/share/perl5/GIFT/"; # for including CFeedbackClient
 use lib '/usr/lib/perl5/site_perl/5.005/i586-linux/';
@@ -9,12 +10,9 @@ use CFeedbackClient; # to make a query in MRML
 
 my $lFeedbackClient = new CFeedbackClient();
 my $DIRPrefix = "/opt/cds-invenio/var/gift-index-data";
-my $url2fts = "/opt/cds-invenio/var/gift-index-data/url2fts.xml";
+# my $url2fts = "/opt/cds-invenio/var/gift-index-data/url2fts.xml";
 
 my @dir_files = <$DIRPrefix/*>;
-my $URLPrefix = "http://arcgift.unige.ch/~xmzh/Fracture\_v2009";
-my $thumbURLPrefix = "http://arcgift.unige.ch/~xmzh/Image_thumbnails/Fracture\_v2009\_thumbnails";
-my $thumbURLPostfix= "\_thumbnail\_jpg.jpg";
 my $resultDir = "/home/xmzh/results/caseRetrieval";
 my $randomlist = "/home/xmzh/results/randomlist.txt";
 
@@ -26,6 +24,7 @@ my $relevance=1;
 my $nbRes = 50;
 my $nbResPerImg = 1000;
 my %distTable =();
+my %hashmap = ();
 
 #----------------------------------------------------------------------	#
 #  Mode debug:                                    						#
@@ -60,6 +59,26 @@ sub max {
   $max_so_far;
 }
 #----------------------------------------------------------------------	#
+#  FUNCTION:  map_url_recid	                                  		   	#
+#                                                                      	#
+#  PURPOSE:   read file url2fts.xml, where recid is stocked in the 		#
+#			  'thumbnail-url-postfix' field					            #
+#----------------------------------------------------------------------	#
+sub map_url_recid
+{
+	my $file = shift;
+	%hashmap = ();
+	
+	my $xs1 = XML::Simple->new();
+	my $doc = $xs1->XMLin($file);
+	my @imglist = $doc->{'image'};
+
+	foreach my $img ( @{ $doc->{'image'} } ) 
+	{
+	   $hashmap{$img->{'url-postfix'}}= $img->{'thumbnail-url-postfix'};
+	}
+}
+#----------------------------------------------------------------------	#
 #  FUNCTION:  configure_gift_client                            			#
 #                                                                      	#
 #  PURPOSE:   configure the gift client with gift invenio setup    		#
@@ -80,6 +99,7 @@ sub configure_gift_client{
     undef,undef,"invenio",undef,"false","false","false","false","100");
   debugPrint("configureSession: $info\n");
 }
+
 #----------------------------------------------------------------------	#
 #  FUNCTION:  query_regrouped_by_max                                  	#
 #                                                                      	#
@@ -116,8 +136,8 @@ sub query_regrouped_by_max{
       my($lImage,$lRelevance)=@$n;
 
       debugPrint("$lImage $lRelevance");
-      $lImage =~/record\/(\d+)/;
-      my $myCase = $1;
+      # $lImage =~/record\/(\d+)/;
+      my $myCase = $hashmap{$lImage};
       debugPrint($myCase);
 
       if($distMaxTable{$myCase})
@@ -139,25 +159,30 @@ sub query_regrouped_by_max{
   }
 }
 
-sub translate_url_recid
-{
-  my $url = shift;
-  
-}
-
+#----------------------------------------------------------------------	#
+#  FUNCTION:  list_recids			                                  	#
+#                                                                      	#
+#  PURPOSE:   Print results in console so that can be     				#
+#             catched inside python programs.			          		#
+#----------------------------------------------------------------------	#
 sub list_recids
 {
-  my @key = sort { $distTable{$b} <=> $distTable{$a} } keys %distTable;
-  my $keynb = scalar @key;
-  # my $maxSimilarity = $distTable{$key[0]};
+	my @key = sort { 
+  		$distTable{$b} <=> $distTable{$a} 
+	} keys %distTable;
+	
+	my $keynb = scalar @key;
+	# my $maxSimilarity = $distTable{$key[0]};
 
-  for (my $n=0; $n<$nbRes && $n<$keynb; $n++)
-  {
-    my $caseID = $key[$n];
-    print "$caseID $distTable{$key[$n]}\n";
-  }
+	for (my $n=0; $n<$nbRes && $n<$keynb; $n++)
+	{
+		my $caseID = $key[$n];
+    	print "$caseID $distTable{$key[$n]}\n";
+	}
 }
 
+map_url_recid($ARGV[1]);
 configure_gift_client;
 query_regrouped_by_max($ARGV[0]);
 list_recids;
+

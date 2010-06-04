@@ -30,6 +30,7 @@ from invenio.search_engine import get_fieldvalues
 from invenio.bibtask import task_get_option
 from invenio.dbquery import run_sql
 from invenio.config import CFG_PREFIX, CFG_TMPDIR, CFG_PATH_WGET, CFG_CERN_SITE
+from invenio.errorlib import register_exception
 
 # variables :
 CFG_GIFTINDEX_PREFIX = CFG_PREFIX + "/var/gift-index-data"
@@ -116,11 +117,14 @@ def gift_indexer(tag):
     print len(imgurl2recid.keys())
     for url in imgurl2recid.keys():
         if url not in urllist:
-            ftfname = extract_features(url)
-            imagexml = ET.SubElement(imagelist,'image')
-            imagexml.set("url-postfix", url)
-            imagexml.set("thumbnail-url-postfix", imgurl2recid[url])
-            imagexml.set("feature-file-name", ftfname)
+            try:
+                ftfname = extract_features(url)
+                imagexml = ET.SubElement(imagelist,'image')
+                imagexml.set("url-postfix", url)
+                imagexml.set("thumbnail-url-postfix", str(imgurl2recid[url]))
+                imagexml.set("feature-file-name", ftfname)
+            except:
+                register_exception()
 
     print CFG_PATH_URL2FTS+"----------"
     url2ftsET.write(CFG_PATH_URL2FTS)
@@ -133,7 +137,7 @@ def gift_indexer(tag):
     ndate = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     run_sql("UPDATE rnkMETHOD SET last_updated=%s WHERE name=%s",
             (ndate, rank_method_code))
-    #os.system("gift --port 12700 --datadir "+CFG_GIFTCONFIG_PREFIX+" &")
+    os.system("gift --port 12700 --datadir "+CFG_GIFTCONFIG_PREFIX+" &")
 
 def is_image(filename):
     """true if the filename's extension is in the content-type lookup"""

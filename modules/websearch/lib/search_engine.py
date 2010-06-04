@@ -101,6 +101,7 @@ from invenio.search_engine_query_parser import SearchQueryParenthesisedParser, \
 InvenioWebSearchQueryParserException, SpiresToInvenioSyntaxConverter
 
 from invenio import webinterface_handler_wsgi_utils as apache
+from invenio.bibrank_gift_searcher import CFG_PATH_URL2FTS
 
 try:
     import invenio.template
@@ -4234,9 +4235,9 @@ def perform_request_search(req=None, cc=CFG_SITE_NAME, c=None, p="", f="", rg=10
         imgurl = p[7:]
         of = "hb"
         # executable_line = "/opt/cds-invenio/lib/perl/gift_query_by_imgurl.pl " + imgurl
-        output = subprocess.Popen(["/opt/cds-invenio/lib/perl/gift_query_by_imgurl.pl", imgurl], stdout=subprocess.PIPE)
+        output = subprocess.Popen(["/opt/cds-invenio/lib/perl/gift_query_by_imgurl.pl", imgurl, CFG_PATH_URL2FTS], stdout=subprocess.PIPE)
         lines = string.split(output.communicate()[0], '\n')
-        # raise repr(lines)
+        # raise StandardError, repr(lines)
 
         lines.reverse()
         results_gift_recIDs = []
