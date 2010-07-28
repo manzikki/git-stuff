@@ -21,10 +21,11 @@
 ## 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 __revision__ = "$Id: bibrank_gift_indexer.py,v 1.93 2009/12/10 10:59:01 Xin Exp $"
 
-import time, re, os, os.path, shutil, urllib, urllib2, webbrowser, xml.dom
+import time, csv, re, os, os.path, shutil, urllib, urllib2, webbrowser, xml.dom
 import distutils.dir_util as DU
 import xml.etree.ElementTree as ET
 
+from invenio.bibformat_engine import *
 from invenio.search_engine import perform_request_search
 from invenio.search_engine import get_fieldvalues
 from invenio.bibtask import task_get_option
@@ -35,14 +36,17 @@ from invenio.errorlib import register_exception
 # variables :
 CFG_GIFTINDEX_PREFIX = CFG_PREFIX + "/var/gift-index-data"
 CFG_PATH_URL2FTS = CFG_GIFTINDEX_PREFIX+"/url2fts.xml"
+CFG_GIFTINDEX_DESC = CFG_GIFTINDEX_PREFIX + "/InvertedFileFeatureDescription.db"
 CFG_GIFTCONFIG_PREFIX = CFG_PREFIX + "/var/gift_config"
 CFG_PATH_GIFTCONFIG = CFG_GIFTCONFIG_PREFIX+"/gift-config.mrml"
 CFG_PATH_GIFTCONFIG_TEMPLATE = "/usr/share/libmrml1/gift-config.mrml"
 
 CFG_PATH_GIFTFTSEXTRACT = "/usr/bin/gift-extract-features"
+CFG_PATH_GIFTWRITEFTSDESC = "/usr/bin/gift-write-feature-descs"
 CFG_PATH_GIFTINDEXGENERATION = "/usr/bin/gift-generate-inverted-file"
 CFG_PATH_CONVERT = "/usr/bin/convert"
 tmp_ppm = CFG_TMPDIR+"/gift_tmp.ppm"
+tmp_desc= CFG_TMPDIR+"/gift_tmp.db"
 tmp_fts = CFG_TMPDIR+"/gift_tmp.fts"
 
 ext2conttype = {"jpg": "image/jpeg",
@@ -67,7 +71,6 @@ urllib2.install_opener(opener)
 #               make the port used for gift parametrable
 def gift_indexer(tag):
     """Rank by the Gnu Image Finding Tools."""
-    urls = []
     imgurl2recid = {}
     recids_8564 = []
     recids_8567 = []
@@ -93,9 +96,11 @@ def gift_indexer(tag):
         if CFG_CERN_SITE :
             recids_8567 = list(Set(recids_8567)&Set(modified_recids))
 
-    imgurl2recid.update(add_url_recid(recids_8564, '8564_q'))
+    # imgurl2recid.update(add_url_recid(recids_8564, '8564_q'))
+    imgurl2recid.update(add_icon_recid(recids_8564, '8564_'))
     if CFG_CERN_SITE :
-        imgurl2recid.update(add_url_recid(recids_8567, '8567_u'))
+        # imgurl2recid.update(add_url_recid(recids_8567, '8567_u'))
+        imgurl2recid.update(add_icon_recid(recids_8567, '8567_'))
     print len(imgurl2recid.keys())
     DU.mkpath(CFG_GIFTINDEX_PREFIX)
     DU.mkpath(CFG_GIFTCONFIG_PREFIX)
@@ -114,7 +119,13 @@ def gift_indexer(tag):
     for xmlnode in xmlnodes:
         print xmlnode.attrib["url-postfix"]
         urllist.append(xmlnode.attrib["url-postfix"])
+
     print len(imgurl2recid.keys())
+    if os.path.isfile(tmp_ppm):
+        os.remove(tmp_ppm)
+    if os.path.isfile(tmp_desc):
+        os.remove(tmp_desc)
+
     for url in imgurl2recid.keys():
         if url not in urllist:
             try:
@@ -132,7 +143,7 @@ def gift_indexer(tag):
     print "\nPROGRESS: 99%\n"
 
     if op=="no" or not os.path.isfile(CFG_PATH_GIFTCONFIG):
-        generate_gift_config_file(len(urls))
+        generate_gift_config_file(len(imgurl2recid.keys()))
 
     ndate = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     run_sql("UPDATE rnkMETHOD SET last_updated=%s WHERE name=%s",
@@ -156,12 +167,34 @@ def add_url_recid(recids, fieldname):
                     ('documents.cern.ch' in url or \
                     'doc.cern.ch' in url or \
                     'preprints.cern.ch' in url):
-                    print url
+                    print 'dropped urls: %s' %url
                 else:
                     tmp_dict[url]=recid
     print len(tmp_dict.keys())
     return tmp_dict
-    
+
+def add_icon_recid(recids, fieldname):  
+    tmp_dict = {}
+    icon_url = ""
+    for recid in recids:
+        bfo = BibFormatObject(recid)
+        resources = bfo.fields(fieldname)
+        for resource in resources:
+            icon_url = ""
+            if ( resource.get("x", "") == "icon" and resource.get("u", "") == "" ):
+                icon_url = resource.get("q", "").replace(" ","")
+            if (resource.get("x", "") == "jpgIcon"):
+                icon_url = resource.get("u", "").replace(" ","")
+            if icon_url != "" and is_image(icon_url):
+                if CFG_CERN_SITE and \
+                    ('documents.cern.ch' in icon_url or \
+                    'doc.cern.ch' in icon_url or \
+                    'preprints.cern.ch' in icon_url):
+                    print 'dropped urls: %s' %icon_url
+                else:
+                    tmp_dict[icon_url]=recid
+    return tmp_dict
+
 def extract_features(url):
     print url+'\n'
     urlsegs = url.split("/")
@@ -174,6 +207,9 @@ def extract_features(url):
     #os.system(CFG_PATH_WGET + " -P "+CFG_TMPDIR+" "+url)
     os.system(CFG_PATH_CONVERT+" -geometry 256x256! "+tmp_img+" "+tmp_ppm)
     os.system(CFG_PATH_GIFTFTSEXTRACT+" "+tmp_ppm)
+    if(not os.path.isfile(tmp_desc)):
+        os.system(CFG_PATH_GIFTWRITEFTSDESC+" <"+tmp_ppm+" >"+tmp_desc)
+        column_filter(tmp_desc,CFG_GIFTINDEX_DESC,' ',[0,1])
     featurefilename = CFG_GIFTINDEX_PREFIX+"/"+filename+".fts"
     os.rename(tmp_fts, featurefilename)
     os.remove(tmp_img)
@@ -254,3 +290,11 @@ def replace_in_files(filepath, searchregx, replacestring):
     output.write(outtext)
     output.close()
 
+def column_filter(filename, fileoutput, separator, selected_columns):
+    output = csv.writer(open(fileoutput, 'w'), delimiter=separator)
+    for line in csv.reader( open(filename), delimiter=separator, skipinitialspace=True): 
+        if line: # Make sure there's at least one entry.
+            list=[]
+            for ind in selected_columns:
+                list.append(line[ind])
+            output.writerow(list)

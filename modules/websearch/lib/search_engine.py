@@ -4254,7 +4254,10 @@ def perform_request_search(req=None, cc=CFG_SITE_NAME, c=None, p="", f="", rg=10
             req.write(create_search_box(cc, colls_to_display, p, f, rg, sf, so, sp, rm, of, ot, aas, ln, p1, f1, m1, op1,
                                         p2, f2, m2, op2, p3, f3, m3, sc, pl, d1y, d1m, d1d, d2y, d2m, d2d, dt, jrec, ec, action))
         # raise repr(results_gift_recIDs)
-        print_records(req, results_gift_recIDs, -1, -9999, of, ot, ln, results_gift_rels, search_pattern=p, verbose=verbose)
+        # print_records(req, results_gift_recIDs, -1, -9999, of, ot, ln, results_gift_rels, search_pattern=p, verbose=verbose)
+        results_similar_relevances_prologue = "("
+        results_similar_relevances_epilogue = ")"
+        print_records(req, results_gift_recIDs, -1, -9999, of, ot, ln, results_gift_rels, results_similar_relevances_prologue, results_similar_relevances_epilogue, search_pattern=p, verbose=verbose)
         # return page_end(req, of, ln)
     # ====================================== GnuIFT added code end here ===========================================
 

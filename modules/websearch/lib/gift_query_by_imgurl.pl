@@ -9,14 +9,7 @@ use lib '/usr/lib/perl5/site_perl/5.005/i586-linux/';
 use CFeedbackClient; # to make a query in MRML
 
 my $lFeedbackClient = new CFeedbackClient();
-my $DIRPrefix = "/opt/cds-invenio/var/gift-index-data";
-# my $url2fts = "/opt/cds-invenio/var/gift-index-data/url2fts.xml";
 
-my @dir_files = <$DIRPrefix/*>;
-my $resultDir = "/home/xmzh/results/caseRetrieval";
-my $randomlist = "/home/xmzh/results/randomlist.txt";
-
-my $range = scalar @dir_files;
 my @cases = ();
 
 my $boolean = 1;
@@ -34,7 +27,7 @@ my %hashmap = ();
 sub debugPrint
 {
 	my $s = shift;
-	if (($ARGV[1]) and ($ARGV[1] eq "DEBUG"))
+	if (($ARGV[2]) and ($ARGV[2] eq "DEBUG"))
 	{
 		print STDERR "$s";
 	}
@@ -172,17 +165,20 @@ sub list_recids
 	} keys %distTable;
 	
 	my $keynb = scalar @key;
-	# my $maxSimilarity = $distTable{$key[0]};
+	my $maxSimilarity = $distTable{$key[0]};
 
 	for (my $n=0; $n<$nbRes && $n<$keynb; $n++)
 	{
 		my $caseID = $key[$n];
-    	print "$caseID $distTable{$key[$n]}\n";
+                my $similarityPercentage = $distTable{$key[$n]};
+    	print "$caseID $similarityPercentage\n";
 	}
 }
 
-map_url_recid($ARGV[1]);
-configure_gift_client;
-query_regrouped_by_max($ARGV[0]);
-list_recids;
-
+if (($ARGV[0]=~/http/) && ($ARGV[1]=~/url2fts/))
+{
+    map_url_recid($ARGV[1]);
+    configure_gift_client;
+    query_regrouped_by_max($ARGV[0]);
+    list_recids;
+}

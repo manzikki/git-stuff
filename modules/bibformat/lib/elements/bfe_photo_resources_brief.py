@@ -31,18 +31,24 @@ def format(bfo):
     """
     Prints html image and link to photo resources.
     """
-    from invenio.config import CFG_SITE_URL
 
-    resources = bfo.fields("8564_")
+    resources = bfo.fields("8564_", escape=1)
+    resources.extend(bfo.fields("8567_", escape=1))
+    
     out = ""
     for resource in resources:
+        icon_url = ""
         if resource.get("x", "") == "icon" and resource.get("u", "") == "":
+            icon_url = resource.get("q", "").replace(" ","")
+        if resource.get("x", "") == "jpgIcon":
+            icon_url = resource.get("u", "").replace(" ","")      
+        if icon_url != "":
             out += '<a href="'+CFG_SITE_URL+'/record/'+bfo.control_field("001")+ \
-                   '?ln='+ bfo.lang + '"><img src="' + resource.get("q", "").replace(" ","") \
-                   + '" alt="" border="0"/></a>'
+                   '?ln='+ bfo.lang + '"><img src="' + icon_url + '" alt="" border="0"/></a>'
             if CFG_BIBRANK_ALLOW_GIFT:
-                out += '<br/> <a href="' + CFG_GIFT_QUERY + resource.get("q", "").replace(" ","") + CFG_RANK_METHOD + '"> find similar images </a>'
+                out += '<br/> <a href="' + CFG_GIFT_QUERY + icon_url + CFG_RANK_METHOD + '"> find similar images </a><br/>'        
     return out
+
 
 def escape_values(bfo):
     """

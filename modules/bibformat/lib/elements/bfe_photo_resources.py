@@ -34,18 +34,22 @@ def format(bfo):
     """
 
     resources = bfo.fields("8564_", escape=1)
+    resources.extend(bfo.fields("8567_", escape=1))
+
     out = ""
     for resource in resources:
-
+        icon_url = ""
         if resource.get("x", "") == "icon" and resource.get("u", "") == "":
-            out += '<br /><br /><img src="' + resource.get("q", "").replace(" ","") + '" alt="" />'
+            icon_url = resource.get("q", "").replace(" ","")
+        if resource.get("x", "") == "jpgIcon":
+            icon_url = resource.get("u", "").replace(" ","")
+        if icon_url != "":
+            out += '<br /><br /><img src="' + icon_url + '" alt="" />'
             if CFG_BIBRANK_ALLOW_GIFT:
-                out += '<br /><br /><a href="'+CFG_GIFT_QUERY+resource.get("q", "").replace(" ","")+CFG_RANK_METHOD+'"> find similar images </a>'
+                out += '<br /><br /><a href="'+CFG_GIFT_QUERY+icon_url+CFG_RANK_METHOD+'"> find similar images </a><br /><br />'
 
         if resource.get("x", "") == "1":
             out += '<br />High resolution: <a href="'+resource.get("q", "") +'">'+ resource.get("q", "") +"</a>"
-            if CFG_BIBRANK_ALLOW_GIFT:
-                out += '<br /><br /><a href="'+CFG_GIFT_QUERY+resource.get("q", "").replace(" ","")+CFG_RANK_METHOD+'"> find similar images </a>'
 
     out += '<br /><font size="-2"><b>© CERN Geneva</b></font>'
     out += '<br /> <a href="'+bfo.field("8564_u")+'">'+ bfo.field("8564_z") + "</a>"
