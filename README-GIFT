@@ -1,0 +1,30 @@
+EADME for the Gnu Image Finding Tools (GIFT) used in CDS-Invenio for image based retrieval 
+
+Last modified on 18, aout 2010 by Xin Zhou
+
+This file describes the integration of GIFT in Invenio.
+
+1. Installation of GIFT : apt-get install gnuift (so far only OS with apt system is addressed.)
+2. Enable image ranking method :
+	-	Login in Invenio as admin
+	-	Goto "Administration"->"bibrank configuration"
+	-	Available ranking methods are listed. To enable the "image_similarity",
+		click "Add new rank method" and select "image_similarity" as template.
+		And then select dedicated collections.
+	-	Run "bibrank -R" and check whether GIFT is doing feature extraction and indexation.
+3. Enable the interface :
+	-	Goto "Administration"->"bibFormat configuration"->"Manage Output Formats"
+	-	Click "HTML brief" to check whether "Picture HTML brief" is used for the collection.
+		If not, using "Add New Rule" to link "Picture HTML brief" to the collection by 
+		specifying the symbolic field name. 
+	-	Click "HTML detailed" to check whether "Picture HTML detailed" is used for the collection.
+		If not, using "Add New Rule" to link "Picture HTML detailed" to the collection by 
+		specifying the symbolic field name. 
+	-	CFG_BIBRANK_ALLOW_GIFT in config.py must be turned on to be 1.
+4. Restart apache to make everything renewed by.
+
+
+To disable the GIFT is even simpler:
+
+	-	Remove the "image similarity" rank method will stop index the image collection.
+	-	Disable the CFG_BIBRANK_ALLOW_GIFT to be 0 will hide the interface.
