@@ -22,6 +22,7 @@ __revision__ = "$Id$"
 
 from invenio.config import CFG_SITE_URL
 from invenio.config import CFG_BIBRANK_ALLOW_GIFT
+from invenio.messages import gettext_set_language
 
 # variables :
 CFG_GIFT_QUERY = CFG_SITE_URL + '/search?ln=fr&p=imgURL:'
@@ -34,7 +35,10 @@ def format(bfo):
 
     resources = bfo.fields("8564_", escape=1)
     resources.extend(bfo.fields("8567_", escape=1))
-    
+
+    _=gettext_set_language(bfo.lang)
+    label=_("Find similar images")
+
     out = ""
     for resource in resources:
         icon_url = ""
@@ -46,7 +50,7 @@ def format(bfo):
             out += '<a href="'+CFG_SITE_URL+'/record/'+bfo.control_field("001")+ \
                    '?ln='+ bfo.lang + '"><img src="' + icon_url + '" alt="" border="0"/></a>'
             if CFG_BIBRANK_ALLOW_GIFT:
-                out += '<br/> <a href="' + CFG_GIFT_QUERY + icon_url + CFG_RANK_METHOD + '"> find similar images </a><br/>'        
+                out += '<br/> <a href="' + CFG_GIFT_QUERY + icon_url + CFG_RANK_METHOD + '"><span style="white-space: nowrap;">'+label+'</span></a><br/>' 
     return out
 
 

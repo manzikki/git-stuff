@@ -17,6 +17,7 @@ my $relevance=1;
 my $nbRes = 50;
 my $nbResPerImg = 1000;
 my %distTable =();
+my %distMaxTable=();
 my %hashmap = ();
 
 #----------------------------------------------------------------------	#
@@ -122,18 +123,18 @@ sub query_regrouped_by_max{
 
     my $n;
     my $lCount=0;
-    my %distMaxTable = ();
+    %distMaxTable = ();
 
     foreach $n (@$resultsList)
     {
       my($lImage,$lRelevance)=@$n;
 
-      debugPrint("$lImage $lRelevance");
+      debugPrint("$lImage $lRelevance\n");
       # $lImage =~/record\/(\d+)/;
       my $myCase = $hashmap{$lImage};
-      debugPrint($myCase);
+      debugPrint("$myCase\n");
 
-      if($distMaxTable{$myCase})
+      if(!$distMaxTable{$myCase})
       {
         $distMaxTable{$myCase} = $lRelevance;
       }
@@ -142,12 +143,12 @@ sub query_regrouped_by_max{
         $distMaxTable{$myCase} = max($lRelevance,$distMaxTable{$myCase});
       }
     }
-
-    my @cases = keys %distMaxTable;
-    foreach my $caseID (@cases)
-    {
-      $distTable{$caseID} += $distMaxTable{$caseID}
-    }
+#    my @cases = keys %distMaxTable;
+#    foreach my $caseID (@cases)
+#    {
+#      $distTable{$caseID} += $distMaxTable{$caseID}
+#    }
+    %distTable = %distMaxTable;
     $nb++;
   }
 }
