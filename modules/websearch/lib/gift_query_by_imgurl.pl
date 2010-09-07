@@ -62,12 +62,12 @@ sub map_url_recid
 {
 	my $file = shift;
 	%hashmap = ();
-	
+
 	my $xs1 = XML::Simple->new();
 	my $doc = $xs1->XMLin($file);
 	my @imglist = $doc->{'image'};
 
-	foreach my $img ( @{ $doc->{'image'} } ) 
+	foreach my $img ( @{ $doc->{'image'} } )
 	{
 	   $hashmap{$img->{'url-postfix'}}= $img->{'thumbnail-url-postfix'};
 	}
@@ -95,21 +95,32 @@ sub configure_gift_client{
 }
 
 #----------------------------------------------------------------------	#
-#  FUNCTION:  query_regrouped_by_max                                  	#
+#  FUNCTION:  process_query			                                  	#
 #                                                                      	#
 #  PURPOSE:   Read the code file to have a code table.     				#
 #             inside it stocks the pair: image -- code          		#
 #----------------------------------------------------------------------	#
-sub query_regrouped_by_max{
-  %distTable =();
-  my $nb = 0;
-  while(@_)
-  {
-    my $line = shift(@_);
-    debugPrint("rel: $relevance, image: $line\n");
+sub process_query
+{
+  	%distTable =();
+	my @lQuery = ();
 
-    # create a new instance
-    my @lQuery = (["$line","$relevance"]);
+  	while(@_)
+  	{
+		my $line = shift(@_);
+		my $rel = substr($line, 0, 1);
+		$line = substr($line, 1);
+
+		if ($rel eq "-")
+		{
+			$relevance = -1;
+		}
+
+    	debugPrint("rel: $relevance, image: $line\n");
+    	# create a new instance
+
+    	push @lQuery,["$line","$relevance"];
+  	}
 
     my $lQueryToSend=$lFeedbackClient->makeQueryString(\@lQuery);
 
@@ -119,38 +130,33 @@ sub query_regrouped_by_max{
     debugPrint($info);
     debugPrint("MRML-----xx-----------------------------------\n");
 
-    my $resultsList=$lFeedbackClient->getResultList();
+    $resultsList=$lFeedbackClient->getResultList();
+}
 
+sub fusion_by_combMAX
+{
     my $n;
     my $lCount=0;
     %distMaxTable = ();
 
     foreach $n (@$resultsList)
     {
-      my($lImage,$lRelevance)=@$n;
+      	my($lImage,$lRelevance)=@$n;
 
-      debugPrint("$lImage $lRelevance\n");
-      # $lImage =~/record\/(\d+)/;
-      my $myCase = $hashmap{$lImage};
-      debugPrint("$myCase\n");
+      	debugPrint("$lImage $lRelevance\n");
+      	my $myCase = $hashmap{$lImage};
+      	debugPrint("$myCase\n");
 
-      if(!$distMaxTable{$myCase})
-      {
-        $distMaxTable{$myCase} = $lRelevance;
-      }
-      else
-      {
-        $distMaxTable{$myCase} = max($lRelevance,$distMaxTable{$myCase});
-      }
+      	if(!$distMaxTable{$myCase})
+      	{
+        	$distMaxTable{$myCase} = $lRelevance;
+      	}
+      	else
+      	{
+        	$distMaxTable{$myCase} = max($lRelevance,$distMaxTable{$myCase});
+      	}
     }
-#    my @cases = keys %distMaxTable;
-#    foreach my $caseID (@cases)
-#    {
-#      $distTable{$caseID} += $distMaxTable{$caseID}
-#    }
     %distTable = %distMaxTable;
-    $nb++;
-  }
 }
 
 #----------------------------------------------------------------------	#
@@ -161,10 +167,10 @@ sub query_regrouped_by_max{
 #----------------------------------------------------------------------	#
 sub list_recids
 {
-	my @key = sort { 
-  		$distTable{$b} <=> $distTable{$a} 
+	my @key = sort {
+  		$distTable{$b} <=> $distTable{$a}
 	} keys %distTable;
-	
+
 	my $keynb = scalar @key;
 	my $maxSimilarity = $distTable{$key[0]};
 
@@ -180,6 +186,8 @@ if (($ARGV[0]=~/http/) && ($ARGV[1]=~/url2fts/))
 {
     map_url_recid($ARGV[1]);
     configure_gift_client;
-    query_regrouped_by_max($ARGV[0]);
+    my @list_imgs = split('&',$ARGV[0]);
+    process_query(@list_imgs);
+    fusion_by_combMAX();
     list_recids;
 }

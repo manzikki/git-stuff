@@ -21,7 +21,8 @@ This file describes the integration of GIFT in Invenio.
 		If not, using "Add New Rule" to link "Picture HTML detailed" to the collection by 
 		specifying the symbolic field name. 
 	-	CFG_BIBRANK_ALLOW_GIFT in config.py must be turned on to be 1.
-4. Restart apache to make everything renewed by.
+	-	Apply the changes by using "bibreformat -a"
+4. Restart apache to make everything renewed.
 
 
 To disable the GIFT is even simpler:

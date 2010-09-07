@@ -24,14 +24,17 @@ __revision__ = "$Id: bibrank_gift_indexer.py,v 1.93 2009/12/10 10:59:01 Xin Exp 
 import time, csv, re, os, os.path, shutil, urllib, urllib2, webbrowser, xml.dom
 import distutils.dir_util as DU
 import xml.etree.ElementTree as ET
+import ConfigParser
 
 from invenio.bibformat_engine import *
+from invenio.shellutils import *
 from invenio.search_engine import perform_request_search
 from invenio.search_engine import get_fieldvalues
 from invenio.bibtask import task_get_option
 from invenio.dbquery import run_sql
-from invenio.config import CFG_PREFIX, CFG_TMPDIR, CFG_PATH_WGET, CFG_CERN_SITE
 from invenio.errorlib import register_exception
+from invenio.bibtask import write_message
+from invenio.config import CFG_PREFIX, CFG_TMPDIR, CFG_PATH_WGET, CFG_CERN_SITE, CFG_ETCDIR
 
 # variables :
 CFG_GIFTINDEX_PREFIX = CFG_PREFIX + "/var/gift-index-data"
@@ -69,39 +72,39 @@ urllib2.install_opener(opener)
 
 #FIXME: add gift server stop and start
 #               make the port used for gift parametrable
-def gift_indexer(tag):
+def gnuift_similarity(rank_method_code):
     """Rank by the Gnu Image Finding Tools."""
+    config = cfgGetParameters(rank_method_code)
+    icon_obj = config.get("gnuift_similarity", "icon_obj")
+    icon_label_tag = config.get("gnuift_similarity", "icon_label_tag")
+    icon_label_val = config.get("gnuift_similarity", "icon_label_value")
+    icon_url_tag = config.get("gnuift_similarity", "icon_url_tag")
+
+    recids = []
     imgurl2recid = {}
-    recids_8564 = []
-    recids_8567 = []
     op = task_get_option("quick")
-    rank_method_code = "img"
     os.system("killall -9 gift")
 
-    print op
-    print CFG_GIFTINDEX_PREFIX
-    print CFG_GIFTCONFIG_PREFIX
-    recids_8564 = perform_request_search(p='8564_x:icon')
-    if CFG_CERN_SITE :
-        recids_8567 = perform_request_search(p='8567_x:jpgIcon')
+    write_message("Image urls are found at : %s", icon_url_tag)
+    write_message("Redo all feature extraction?? : %s", op)
+    write_message("Gnuift features are stored in : %s", CFG_GIFTINDEX_PREFIX)
+    write_message("Gnuift config files are stored in: %s", CFG_GIFTCONFIG_PREFIX)
+
+    icon_p = icon_obj+icon_label_tag+':'+icon_label_val
+    recids = perform_request_search(p=icon_p)
 
     if op and op=="no":
         if os.path.isdir(CFG_GIFTINDEX_PREFIX):
             DU.remove_tree(CFG_GIFTINDEX_PREFIX)
     else:
         last_updated = get_bibrankmethod_lastupdate(rank_method_code)
-        print last_updated
+        write_message("Last time Gnuift extracted features was : %s", last_updated)
         modified_recids = get_last_modified_rec(last_updated)
-        recids_8564 = list(Set(recids_8564)&Set(modified_recids))
-        if CFG_CERN_SITE :
-            recids_8567 = list(Set(recids_8567)&Set(modified_recids))
+        recids = list(Set(recids) & Set(modified_recids))
 
-    # imgurl2recid.update(add_url_recid(recids_8564, '8564_q'))
-    imgurl2recid.update(add_icon_recid(recids_8564, '8564_'))
-    if CFG_CERN_SITE :
-        # imgurl2recid.update(add_url_recid(recids_8567, '8567_u'))
-        imgurl2recid.update(add_icon_recid(recids_8567, '8567_'))
-    print len(imgurl2recid.keys())
+    imgurl2recid = add_icon_recid(recids, icon_obj, icon_label_tag, icon_label_val, icon_url_tag)
+
+    write_message("The number of urls taken is : %s", len(imgurl2recid.keys()))
     DU.mkpath(CFG_GIFTINDEX_PREFIX)
     DU.mkpath(CFG_GIFTCONFIG_PREFIX)
 
@@ -140,14 +143,15 @@ def gift_indexer(tag):
     print CFG_PATH_URL2FTS+"----------"
     url2ftsET.write(CFG_PATH_URL2FTS)
     os.system(CFG_PATH_GIFTINDEXGENERATION+" "+CFG_GIFTINDEX_PREFIX+"/")
+    # TODO : using run_shell_command???
+    #run_shell_command(CFG_PATH_GIFTINDEXGENERATION+" %s", (CFG_GIFTINDEX_PREFIX+"/",))
     print "\nPROGRESS: 99%\n"
 
     if op=="no" or not os.path.isfile(CFG_PATH_GIFTCONFIG):
         generate_gift_config_file(len(imgurl2recid.keys()))
 
     ndate = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-    run_sql("UPDATE rnkMETHOD SET last_updated=%s WHERE name=%s",
-            (ndate, rank_method_code))
+    run_sql("UPDATE rnkMETHOD SET last_updated=%s WHERE name=%s",(ndate, rank_method_code))
     os.system("gift --port 12700 --datadir "+CFG_GIFTCONFIG_PREFIX+" &")
 
 def is_image(filename):
@@ -157,8 +161,6 @@ def is_image(filename):
 
 def add_url_recid(recids, fieldname):
     tmp_dict = {}
-    print len(recids)
-    print "fieldname: %s\n" %fieldname
     for recid in recids:
         urls = get_fieldvalues(recid, fieldname)
         for url in urls:
@@ -173,21 +175,18 @@ def add_url_recid(recids, fieldname):
     print len(tmp_dict.keys())
     return tmp_dict
 
-def add_icon_recid(recids, fieldname):  
+def add_icon_recid(recids, icon_obj, icon_label_tag, icon_label_val, icon_url_tag):
     tmp_dict = {}
     icon_url = ""
     for recid in recids:
         bfo = BibFormatObject(recid)
-        resources = bfo.fields(fieldname)
+        resources = bfo.fields(icon_obj)
         for resource in resources:
             icon_url = ""
-            if ( resource.get("x", "") == "icon" and resource.get("u", "") == "" ):
-                icon_url = resource.get("q", "").replace(" ","")
-            if (resource.get("x", "") == "jpgIcon"):
-                icon_url = resource.get("u", "").replace(" ","")
+            if (resource.get(icon_label_tag, "") == icon_label_val):
+                icon_url = resource.get(icon_url_tag, "").replace(" ","")
             if icon_url != "" and is_image(icon_url):
-                if CFG_CERN_SITE and \
-                    ('documents.cern.ch' in icon_url or \
+                if ('documents.cern.ch' in icon_url or \
                     'doc.cern.ch' in icon_url or \
                     'preprints.cern.ch' in icon_url):
                     print 'dropped urls: %s' %icon_url
@@ -241,24 +240,16 @@ def generate_gift_config_file(num_img):
     configET.write(CFG_PATH_GIFTCONFIG, "UTF-8")
     replace_in_files(CFG_PATH_GIFTCONFIG, r'''__COLLECTION__''', r'''invenio''')
 
-#def get_cited_by(recordid):
-#    """Return a list of records that cite recordid"""
-#    ret = []
-#    cache_cited_by_dictionary = get_citation_dict("citationdict")
-#    if cache_cited_by_dictionary.has_key(recordid):
-#        ret = cache_cited_by_dictionary[recordid]
-#    return ret
-#
-#def gift_update_image_list():
-#       result = find_citations(rank_method_code, p, hitset, verbose)
-#
-#def get_lastupdated(rank_method_code):
-#    """Get the last time the rank method was updated"""
-#    res = run_sql("SELECT rnkMETHOD.last_updated FROM rnkMETHOD WHERE name=%s", (rank_method_code, ))
-#    if res:
-#        return res[0][0]
-#    else:
-#        raise Exception("Is this the first run? Please do a complete update.")
+def gift_read_url2fts():
+    url2ftsTable = {}
+    url2ftsET = ET.ElementTree()
+    url2ftsET.parse(CFG_PATH_URL2FTS)
+    xmlnodes = url2ftsET.findall("//image")
+    for xmlnode in xmlnodes:
+        urlpostfix = xmlnode.attrib["url-postfix"]
+        recpostfix = xmlnode.attrib["thumbnail-url-postfix"]
+        url2ftsTable[urlpost]=recpostfix
+    return url2ftsTable
 
 def get_bibrankmethod_lastupdate(rank_method_code):
     """return the last excution date of bibrank method
@@ -292,9 +283,21 @@ def replace_in_files(filepath, searchregx, replacestring):
 
 def column_filter(filename, fileoutput, separator, selected_columns):
     output = csv.writer(open(fileoutput, 'w'), delimiter=separator)
-    for line in csv.reader( open(filename), delimiter=separator, skipinitialspace=True): 
+    for line in csv.reader( open(filename), delimiter=separator, skipinitialspace=True):
         if line: # Make sure there's at least one entry.
             list=[]
             for ind in selected_columns:
                 list.append(line[ind])
             output.writerow(list)
+
+def cfgGetParameters(rank_method_code):
+    """get parameters from cfg file, the cfg file is named by rank_method_code.cfg"""
+    write_message("Running rank method: %s" % rank_method_code, verbose=0)
+    try:
+        file_ = CFG_ETCDIR + "/bibrank/" + rank_method_code + ".cfg"
+        config = ConfigParser.ConfigParser()
+        config.readfp(open(file_))
+        return config
+    except StandardError:
+        write_message("Cannot find configuration file: %s" % file_, sys.stderr)
+        raise StandardError

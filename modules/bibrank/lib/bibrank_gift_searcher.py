@@ -19,9 +19,34 @@
 
 __revision__ = "$Id$"
 
-from invenio.config import CFG_PREFIX
+from invenio.config import CFG_PREFIX, CFG_LIBDIR
+from invenio.shellutils import *
 
 # variables : (keep them identical with those in bibrank_gift_indexer)
 CFG_GIFTINDEX_PREFIX = CFG_PREFIX + "/var/gift-index-data"
 CFG_PATH_URL2FTS = CFG_GIFTINDEX_PREFIX+"/url2fts.xml"
 
+def get_similar_visual_recids(imgurls):
+    imgurl =  '&'.join(imgurls)
+    # executable_line = "/opt/cds-invenio/lib/perl/gift_query_by_imgurl.pl " + imgurl
+    error_code, lines, erroroutput = run_shell_command(CFG_LIBDIR+"perl/invenio/gift_query_by_imgurl.pl %s %s", (imgurl, CFG_PATH_URL2FTS,))
+    # output = subprocess.Popen([CFG_LIBDIR+"perl/invenio/gift_query_by_imgurl.pl", imgurl, CFG_PATH_URL2FTS], stdout = subprocess.PIPE)
+    # lines = string.split(output.communicate()[0], '\n')
+    # raise repr(lines)
+
+    lines.reverse()
+    results = {}
+    results_gift_recIDs = []
+    results_gift_rels = []
+
+    for line in lines:
+        if (line):
+            ans = string.split(line)
+            # results_gift_recIDs.append(int(ans[0]))
+            # results_gift_rels.append(float(ans[1]))
+            results[0] = results_gift_recIDs.append(int(ans[0]))
+            results[1] = results_gift_rels.append(float(ans[1]))
+
+    results[0] = results_gift_recIDs
+    results[1] = results_gift_rels
+    return results

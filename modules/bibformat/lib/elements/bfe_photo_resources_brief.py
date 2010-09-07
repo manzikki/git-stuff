@@ -25,8 +25,7 @@ from invenio.config import CFG_BIBRANK_ALLOW_GIFT
 from invenio.messages import gettext_set_language
 
 # variables :
-CFG_GIFT_QUERY = CFG_SITE_URL + '/search?ln=fr&p=imgURL:'
-CFG_RANK_METHOD = '&rm=img'
+CFG_GIFT_QUERY = CFG_SITE_URL + '/search?imgURL=+'
 
 def format(bfo):
     """
@@ -38,6 +37,8 @@ def format(bfo):
 
     _=gettext_set_language(bfo.lang)
     label=_("Find similar images")
+    label_similar = _("Similar")
+    label_disimilar=_("Disimilar")
 
     out = ""
     for resource in resources:
@@ -47,12 +48,12 @@ def format(bfo):
         if resource.get("x", "") == "jpgIcon":
             icon_url = resource.get("u", "").replace(" ","")      
         if icon_url != "":
-            out += '<a href="'+CFG_SITE_URL+'/record/'+bfo.control_field("001")+ \
+            out += '<div style="white-space: nowrap; float:left;"><a href="'+CFG_SITE_URL+'/record/'+bfo.control_field("001")+ \
                    '?ln='+ bfo.lang + '"><img src="' + icon_url + '" alt="" border="0"/></a>'
             if CFG_BIBRANK_ALLOW_GIFT:
-                out += '<br/> <a href="' + CFG_GIFT_QUERY + icon_url + CFG_RANK_METHOD + '"><span style="white-space: nowrap;">'+label+'</span></a><br/>' 
+                out += '<br/><a href="' + CFG_GIFT_QUERY + icon_url + '">'+label+'</a><br/>'
+                out += '<div style="white-space: nowrap;"><input name="imgURL" type="checkbox" value="+' + icon_url +'" />'+label_similar+'<input name="imgURL" type="checkbox" value="-' + icon_url +'" />'+label_disimilar+'</div></div>'
     return out
-
 
 def escape_values(bfo):
     """

@@ -101,7 +101,7 @@ from invenio.search_engine_query_parser import SearchQueryParenthesisedParser, \
 InvenioWebSearchQueryParserException, SpiresToInvenioSyntaxConverter
 
 from invenio import webinterface_handler_wsgi_utils as apache
-from invenio.bibrank_gift_searcher import CFG_PATH_URL2FTS
+from invenio.bibrank_gift_searcher import get_similar_visual_recids
 
 try:
     import invenio.template
@@ -3236,6 +3236,7 @@ def print_records(req, recIDs, jrec=1, rg=10, format='hb', ot='', ln=CFG_SITE_LA
                 for irec in range(irec_max, irec_min, -1):
                     req.write(print_record(recIDs[irec], format, ot, ln, search_pattern=search_pattern,
                                            user_info=user_info, verbose=verbose))
+                req.write("<br/>")
             elif format.startswith("hb"):
                 # HTML brief format:
 
@@ -3914,7 +3915,7 @@ def log_query_info(action, p, f, colls, nb_records_found_total=-1):
 def perform_request_search(req=None, cc=CFG_SITE_NAME, c=None, p="", f="", rg=10, sf="", so="d", sp="", rm="", of="id", ot="", aas=0,
                            p1="", f1="", m1="", op1="", p2="", f2="", m2="", op2="", p3="", f3="", m3="", sc=0, jrec=0,
                            recid=-1, recidb=-1, sysno="", id=-1, idb=-1, sysnb="", action="", d1="",
-                           d1y=0, d1m=0, d1d=0, d2="", d2y=0, d2m=0, d2d=0, dt="", verbose=0, ap=0, ln=CFG_SITE_LANG, ec=None, tab=""):
+                           d1y=0, d1m=0, d1d=0, d2="", d2y=0, d2m=0, d2d=0, dt="", verbose=0, ap=0, ln=CFG_SITE_LANG, ec=None, tab="", imgURL=None):
     """Perform search or browse request, without checking for
        authentication.  Return list of recIDs found, if of=id.
        Otherwise create web page.
@@ -4083,6 +4084,8 @@ def perform_request_search(req=None, cc=CFG_SITE_NAME, c=None, p="", f="", rg=10
 
           ec - list of external search engines to search as well
                (e.g. "SPIRES HEP").
+
+      imgURL - list of image selection for the image similarity search
     """
 
     selected_external_collections_infos = None
@@ -4131,6 +4134,8 @@ def perform_request_search(req=None, cc=CFG_SITE_NAME, c=None, p="", f="", rg=10
     p3 = wash_pattern(p3)
     f3 = wash_field(f3)
     datetext1, datetext2 = wash_dates(d1, d1y, d1m, d1d, d2, d2y, d2m, d2d)
+    if imgURL is None:
+        imgURL = []
 
     # wash ranking method:
     if not is_method_valid(None, rm):
@@ -4231,33 +4236,16 @@ def perform_request_search(req=None, cc=CFG_SITE_NAME, c=None, p="", f="", rg=10
     # FIXME: jump to another page after query search
     # ====================================== GnuIFT added code start here =========================================
     # _ = gettext_set_language(ln)
-    elif rm == "img" and p.startswith("imgURL:"):
-        imgurl = p[7:]
+    elif len(imgURL) > 0:
+        rank_list = get_similar_visual_recids(imgurls)
         of = "hb"
-        # executable_line = "/opt/cds-invenio/lib/perl/gift_query_by_imgurl.pl " + imgurl
-        output = subprocess.Popen(["/opt/cds-invenio/lib/perl/gift_query_by_imgurl.pl", imgurl, CFG_PATH_URL2FTS], stdout=subprocess.PIPE)
-        lines = string.split(output.communicate()[0], '\n')
-        # raise StandardError, repr(lines)
-
-        lines.reverse()
-        results_gift_recIDs = []
-        results_gift_rels = []
-
-        for line in lines:
-            if (line):
-                ans = string.split(line)
-                results_gift_recIDs.append(int(ans[0]))
-                results_gift_rels.append(float(ans[1]))
-
+        results_similar_relevances_prologue = "("
+        results_similar_relevances_epilogue = ")"
         page_start(req, of, cc, aas, ln, getUid(req), _("Search Results"))
         if of.startswith("h"):
             req.write(create_search_box(cc, colls_to_display, p, f, rg, sf, so, sp, rm, of, ot, aas, ln, p1, f1, m1, op1,
-                                        p2, f2, m2, op2, p3, f3, m3, sc, pl, d1y, d1m, d1d, d2y, d2m, d2d, dt, jrec, ec, action))
-        # raise repr(results_gift_recIDs)
-        # print_records(req, results_gift_recIDs, -1, -9999, of, ot, ln, results_gift_rels, search_pattern=p, verbose=verbose)
-        results_similar_relevances_prologue = "("
-        results_similar_relevances_epilogue = ")"
-        print_records(req, results_gift_recIDs, -1, -9999, of, ot, ln, results_gift_rels, results_similar_relevances_prologue, results_similar_relevances_epilogue, search_pattern=p, verbose=verbose)
+                            p2, f2, m2, op2, p3, f3, m3, sc, pl, d1y, d1m, d1d, d2y, d2m, d2d, dt, jrec, ec, action))
+        print_records(req, rank_list[0], -1, -9999, of, ot, ln, rank_list[1], "(", ")", search_pattern=p, verbose=verbose)
         # return page_end(req, of, ln)
     # ====================================== GnuIFT added code end here ===========================================
 

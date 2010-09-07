@@ -24,9 +24,7 @@ from invenio.config import CFG_SITE_URL
 from invenio.config import CFG_BIBRANK_ALLOW_GIFT
 
 # variables :
-CFG_GIFT_QUERY = CFG_SITE_URL + '/search?ln=fr&p=imgURL:'
-CFG_RANK_METHOD = '&rm=img'
-
+CFG_GIFT_QUERY = CFG_SITE_URL + '/search?imgURL=+'
 
 def format(bfo):
     """
@@ -46,7 +44,7 @@ def format(bfo):
         if icon_url != "":
             out += '<br /><br /><img src="' + icon_url + '" alt="" />'
             if CFG_BIBRANK_ALLOW_GIFT:
-                out += '<br /><br /><a href="'+CFG_GIFT_QUERY+icon_url+CFG_RANK_METHOD+'"> find similar images </a><br /><br />'
+                out += '<br /><br /><a href="'+CFG_GIFT_QUERY+icon_url+'"> find similar images </a><br /><br />'
 
         if resource.get("x", "") == "1":
             out += '<br />High resolution: <a href="'+resource.get("q", "") +'">'+ resource.get("q", "") +"</a>"
