@@ -19,7 +19,7 @@ my $nbResPerImg = 1000;
 my %distTable =();
 my %distMaxTable=();
 my %hashmap = ();
-
+my $resultsList;
 #----------------------------------------------------------------------	#
 #  Mode debug:                                    						#
 #                                                                      	#
@@ -186,7 +186,7 @@ if (($ARGV[0]=~/http/) && ($ARGV[1]=~/url2fts/))
 {
     map_url_recid($ARGV[1]);
     configure_gift_client;
-    my @list_imgs = split('&',$ARGV[0]);
+    my @list_imgs = split("&",$ARGV[0]);
     process_query(@list_imgs);
     fusion_by_combMAX();
     list_recids;

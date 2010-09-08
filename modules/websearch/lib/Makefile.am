@@ -40,9 +40,10 @@ pylib_DATA = \
 	websearch_external_collections_tests.py \
 	websearch_external_collections_utils.py 
 
-perllibdir = $(libdir)/perl
+perllibdir = $(libdir)/perl/invenio
 
-perllib_SCRIPTS = gift_query_by_imgurl.pl
+perllib_SCRIPTS = gift_query_by_imgurl.pl \
+                  gift_query_by_imgurl_tests.pl
 
 EXTRA_DIST = $(pylib_DATA) $(perllib_SCRIPTS)
 

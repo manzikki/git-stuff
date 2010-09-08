@@ -4237,8 +4237,9 @@ def perform_request_search(req=None, cc=CFG_SITE_NAME, c=None, p="", f="", rg=10
     # ====================================== GnuIFT added code start here =========================================
     # _ = gettext_set_language(ln)
     elif len(imgURL) > 0:
-        rank_list = get_similar_visual_recids(imgurls)
-        of = "hb"
+        rank_list = get_similar_visual_recids(imgURL)
+        #of = "hb"
+        of = "hp"
         results_similar_relevances_prologue = "("
         results_similar_relevances_epilogue = ")"
         page_start(req, of, cc, aas, ln, getUid(req), _("Search Results"))

@@ -86,7 +86,7 @@ from invenio.bibrank_tag_based_indexer import \
     download_weight_total, \
     file_similarity_by_times_downloaded
 from invenio.bibrank_word_indexer import word_similarity
-from invenio.bibrank_gift_indexer import gift_indexer
+from invenio.bibrank_gift_indexer import gnuift_similarity
 
 
 nb_char_in_line = 50  # for verbose pretty printing
