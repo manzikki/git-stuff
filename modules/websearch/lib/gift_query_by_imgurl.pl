@@ -14,7 +14,7 @@ my @cases = ();
 
 my $boolean = 1;
 my $relevance=1;
-my $nbRes = 50;
+my $nbRes = 100;
 my $nbResPerImg = 1000;
 my %distTable =();
 my %distMaxTable=();
@@ -114,6 +114,10 @@ sub process_query
 		if ($rel eq "-")
 		{
 			$relevance = -1;
+		}
+                else
+	 	{
+			$relevance = 1;
 		}
 
     	debugPrint("rel: $relevance, image: $line\n");

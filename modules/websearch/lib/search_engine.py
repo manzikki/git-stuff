@@ -3231,12 +3231,18 @@ def print_records(req, recIDs, jrec=1, rg=10, format='hb', ot='', ln=CFG_SITE_LA
             create_excel(recIDs=recIDs_to_print, req=req, ln=ln, ot=ot)
         else:
             # we are doing HTML output:
+            req.write('<input type="hidden" name="of" value="%s">' % cgi.escape(format))
             if format == 'hp' or format.startswith("hb_") or format.startswith("hd_"):
                 # portfolio and on-the-fly formats:
+                nPerLine = 6
+                n = 0
                 for irec in range(irec_max, irec_min, -1):
                     req.write(print_record(recIDs[irec], format, ot, ln, search_pattern=search_pattern,
                                            user_info=user_info, verbose=verbose))
-                req.write("<br/>")
+                    n=n+1
+	            if(n % nPerLine == 0):
+	                req.write('<br clear="all">')
+                req.write("<br clear=\"all\"/>")
             elif format.startswith("hb"):
                 # HTML brief format:
 
@@ -4238,15 +4244,17 @@ def perform_request_search(req=None, cc=CFG_SITE_NAME, c=None, p="", f="", rg=10
     # _ = gettext_set_language(ln)
     elif len(imgURL) > 0:
         rank_list = get_similar_visual_recids(imgURL)
-        #of = "hb"
-        of = "hp"
         results_similar_relevances_prologue = "("
         results_similar_relevances_epilogue = ")"
         page_start(req, of, cc, aas, ln, getUid(req), _("Search Results"))
         if of.startswith("h"):
             req.write(create_search_box(cc, colls_to_display, p, f, rg, sf, so, sp, rm, of, ot, aas, ln, p1, f1, m1, op1,
                             p2, f2, m2, op2, p3, f3, m3, sc, pl, d1y, d1m, d1d, d2y, d2m, d2d, dt, jrec, ec, action))
-        print_records(req, rank_list[0], -1, -9999, of, ot, ln, rank_list[1], "(", ")", search_pattern=p, verbose=verbose)
+        #req.write(str(len(rank_list[0])))
+        req.write(print_search_info(p, f, sf, so, sp, rm, of, ot, cc, len(rank_list[0]),
+                                   jrec, rg, aas, ln, p1, p2, p3, f1, f2, f3, m1, m2, m3, op1, op2,
+                                   sc, pl_in_url, d1y, d1m, d1d, d2y, d2m, d2d, dt, 0))
+        print_records(req, rank_list[0], jrec, rg, of, ot, ln, rank_list[1], "(", ")", search_pattern=p, verbose=verbose)
         # return page_end(req, of, ln)
     # ====================================== GnuIFT added code end here ===========================================
 
