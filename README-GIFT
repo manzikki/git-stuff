@@ -11,6 +11,7 @@ This file describes the integration of GIFT in Invenio.
 	-	Available ranking methods are listed. To enable the "image_similarity",
 		click "Add new rank method" and select "image_similarity" as template.
 		And then select dedicated collections.
+	-	
 	-	Run "bibrank -R" and check whether GIFT is doing feature extraction and indexation.
 3. Enable the interface :
 	-	Goto "Administration"->"bibFormat configuration"->"Manage Output Formats"
