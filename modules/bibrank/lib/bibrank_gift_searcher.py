@@ -32,9 +32,9 @@ CFG_PERL_QUERY_SCRIPT = CFG_LIBDIR+"perl/invenio/gift_query_by_imgurl.pl"
 
 def get_similar_visual_recids(imgurls):
     """ This function is used to perform the query for image retrieval
-        In parameter imgurls a list of image urls are passed
-        Those started with '+' are similar images
-        Those with '-' are disimilar images
+        @param imgurls: a list of image urls.
+                        Those started with '+' are similar images
+                        Those with '-' are disimilar images
         This function just use '&' to join them into one string
         It is in perl script CFG_PERL_QUERY_SCRIPT the query is executed
     """

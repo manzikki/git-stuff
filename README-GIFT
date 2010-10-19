@@ -8,11 +8,42 @@ This file describes the integration of GIFT in Invenio.
 2. Enable image ranking method :
 	-	Login in Invenio as admin
 	-	Goto "Administration"->"bibrank configuration"
-	-	Available ranking methods are listed. To enable the "image_similarity",
+	    Available ranking methods are listed. To enable the "image_similarity",
 		click "Add new rank method" and select "image_similarity" as template.
-		And then select dedicated collections.
-	-	
-	-	Run "bibrank -R" and check whether GIFT is doing feature extraction and indexation.
+		Then select dedicated collections.
+	-	In "BibRank Admin Interface", click on "show details".
+		Check the parameters in "Configuration file" part. 
+		All parameters are mainly for identifying image urls in the collection.
+		Four parameters are set by 4 variables:		
+        + icon_obj : 		the xml tag for the image object, by default '8564_'
+        + icon_label_tag :	the xml tag which indicates the nature of object, 
+        				  	usually is 'x'
+        + icon_label_value: the image label value, by default 'icon'
+          					(as GIFT normalize all images into 256x256, 
+          					take icon image is enough for similarity comparison)
+        + icon_url_tag : 	the xml tag for the image url, by default is 'q'
+        These parameters need to be correctly set to ensure the functionality of 
+        "image similarity" rank method.
+        ( For example, the default set means: 
+          - for each record, if 8564_x equals to 'icon' then pick the value in 
+        	8564_q as image url. 
+          Therefore, if in practice 8564_q is not a image url or 8564_x is not 
+          equals to 'icon', please change these parameters by clicking "Modify", 
+          put the correct values, then restart apache and run "webcoll -f".
+        )
+    -	Goto "Administration"->"bibindex configuration"->"Manage logical fields"
+    	Check if the icon_label and icon_url fields exist (By default 8564_x and
+    	8564_q). If not, add them to any index. The goal is to ensure that fields 
+    	required by "image_similartiy" will be indexed by Invenio.
+    -   If in the last step, no change is needed, then this step can be skipped.
+    	Otherwise, run "bibindex -R" to redo the Invenio indexation.
+	-	Run "bibrank -R" and check whether GIFT is doing feature extraction and 
+		indexation. (Run bibrank without -R will only index new or modified records
+		which contain images).
+	-   To check if "image_similarity" rank method worked correctly, check 
+		cds-invenio/var/gift-index-data to see whether fts files are correctly 
+		stored, and "InvertedFile.db" and "url2fts.xml" are correctly generated
+		(size is not equal to 0)
 3. Enable the interface :
 	-	Goto "Administration"->"bibFormat configuration"->"Manage Output Formats"
 	-	Click "HTML brief" to check whether "Picture HTML brief" is used for the collection.
@@ -22,8 +53,7 @@ This file describes the integration of GIFT in Invenio.
 		If not, using "Add New Rule" to link "Picture HTML detailed" to the collection by 
 		specifying the symbolic field name. 
 	-	CFG_BIBRANK_ALLOW_GIFT in config.py must be turned on to be 1.
-	-	Apply the changes by using "bibreformat -a"
-4. Restart apache to make everything renewed.
+	-	Apply the changes by using "bibreformat -a", and then run restart apache,
 
 
 To disable the GIFT is even simpler:

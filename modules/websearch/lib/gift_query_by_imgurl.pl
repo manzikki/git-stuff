@@ -3,10 +3,9 @@
 use strict;
 use POSIX qw(WNOHANG);
 use XML::Simple;
-# use lib "/usr/local/bin/"; # for including CFeedbackClient
 use lib "/usr/share/perl5/GIFT/"; # for including CFeedbackClient
 use lib '/usr/lib/perl5/site_perl/5.005/i586-linux/';
-use CFeedbackClient; # to make a query in MRML
+use CFeedbackClient; 			  # to make a query in MRML
 
 my $lFeedbackClient = new CFeedbackClient();
 
@@ -14,8 +13,13 @@ my @cases = ();
 
 my $boolean = 1;
 my $relevance=1;
-my $nbRes = 100;
-my $nbResPerImg = 1000;
+# the number of records per query
+my $nbRes = 100; 			
+# the number of images per query.
+# this number should be larger than $nbRes,
+# as several images can belong to one record.
+my $nbResPerImg = 1000;		
+
 my %distTable =();
 my %distMaxTable=();
 my %hashmap = ();
@@ -137,6 +141,18 @@ sub process_query
     $resultsList=$lFeedbackClient->getResultList();
 }
 
+#----------------------------------------------------------------------	#
+#  FUNCTION:  fusion_by_combMAX		                                  	#
+#                                                                      	#
+#  PURPOSE:   Retrieval function only returns images.     				#
+#             fusion_by_combMAX merges images into records.				#
+#			  combMAX only takes the maximum similarity          		#
+#			  ex: if system returns the list of similar images :		#
+#				  image1: 0.54, image2:0.34, image3:0.2, image4:0.1		#
+# 				  and image1, image4 belongs to record1, 				#
+# 					  image2, image3 belongs to record2,				#
+# 			      the final results are : record1:0.54, record2:0.34	#
+#----------------------------------------------------------------------	#
 sub fusion_by_combMAX
 {
     my $n;
@@ -186,10 +202,14 @@ sub list_recids
 	}
 }
 
+# $ARGV[0] is the list of urls, which cannot be empty
+# $ARGV[1] is the url2fts files, which cannot be empty
+# $ARGV[2] is the DEBUG mode, optional, only active if $ARGV[2] eq "DEBUG" 
 if (($ARGV[0]=~/http/) && ($ARGV[1]=~/url2fts/))
 {
     map_url_recid($ARGV[1]);
     configure_gift_client;
+    # the list of query images are separated by "&"
     my @list_imgs = split("&",$ARGV[0]);
     process_query(@list_imgs);
     fusion_by_combMAX();
