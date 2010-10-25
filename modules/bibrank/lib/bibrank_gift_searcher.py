@@ -22,6 +22,7 @@ __revision__ = "$Id$"
 import xml.etree.ElementTree as ET
 from invenio.config import CFG_PREFIX, CFG_PYLIBDIR
 from invenio.shellutils import *
+from invenio.bibtask import write_message
 
 # variables : (keep them identical with those in bibrank_gift_indexer)
 CFG_GIFTINDEX_PREFIX = CFG_PREFIX + "/var/gift-index-data"
