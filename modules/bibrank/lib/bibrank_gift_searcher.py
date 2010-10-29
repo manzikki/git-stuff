@@ -42,7 +42,7 @@ def get_similar_visual_recids(imgurls):
     imgurl =  '&'.join(imgurls)
     # executable_line = "/opt/cds-invenio/lib/perl/gift_query_by_imgurl.pl " + imgurl
     error_code, output, error_output = run_shell_command(
-        "CFG_PERL_QUERY_SCRIPT %s %s", (imgurl, CFG_PATH_URL2FTS,))
+        CFG_PERL_QUERY_SCRIPT+" %s %s", (imgurl, CFG_PATH_URL2FTS,))
     if (error_code != 0):
         write_message("Image urls are found at : %s" % 
             (icon_obj+"_"+icon_url_tag), stream=sys.sterr, verbose=0)
