@@ -20,7 +20,6 @@
 """
 __revision__ = "$Id$"
 
-def format_element(bfo):
 from invenio.config import CFG_SITE_URL
 from invenio.config import CFG_BIBRANK_ALLOW_GIFT
 from invenio.messages import gettext_set_language
@@ -28,7 +27,7 @@ from invenio.messages import gettext_set_language
 # variables :
 CFG_GIFT_QUERY = CFG_SITE_URL + '/search?imgURL=+'
 
-def format(bfo):
+def format_element(bfo):
     """
     Prints html image and link to photo resources.
     """
@@ -36,10 +35,10 @@ def format(bfo):
     resources = bfo.fields("8564_", escape=1)
     resources.extend(bfo.fields("8567_", escape=1))
 
-    _=gettext_set_language(bfo.lang)
-    label=_("Find similar images")
+    _ = gettext_set_language(bfo.lang)
+    label = _("Find similar images")
     label_similar = _("Similar")
-    label_disimilar=_("Dissimilar")
+    label_disimilar = _("Dissimilar")
 
     out = ""
     for resource in resources:
