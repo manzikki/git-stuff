@@ -21,20 +21,44 @@
 __revision__ = "$Id$"
 
 def format_element(bfo):
+from invenio.config import CFG_SITE_URL
+from invenio.config import CFG_BIBRANK_ALLOW_GIFT
+from invenio.messages import gettext_set_language
+
+# variables :
+CFG_GIFT_QUERY = CFG_SITE_URL + '/search?imgURL=+'
+
+def format(bfo):
     """
     Prints html image and link to photo resources.
     """
-    from invenio.config import CFG_SITE_URL
 
-    resources = bfo.fields("8564_")
+    resources = bfo.fields("8564_", escape=1)
+    resources.extend(bfo.fields("8567_", escape=1))
+
+    _=gettext_set_language(bfo.lang)
+    label=_("Find similar images")
+    label_similar = _("Similar")
+    label_disimilar=_("Dissimilar")
+
     out = ""
     for resource in resources:
-
         if resource.get("x", "") == "icon":
             out += '<a href="'+CFG_SITE_URL+'/record/'+bfo.control_field("001")+ \
                    '?ln='+ bfo.lang + '"><img src="' + resource.get("u", "").replace(" ","") \
                    + '" alt="" border="0"/></a>'
 
+        icon_url = ""
+        if resource.get("x", "") == "icon" and resource.get("u", "") == "":
+            icon_url = resource.get("q", "").replace(" ","")
+        if resource.get("x", "") == "jpgIcon":
+            icon_url = resource.get("u", "").replace(" ","")      
+        if icon_url != "":
+            out += '<div style="white-space: nowrap; float:left;"><a href="'+CFG_SITE_URL+'/record/'+bfo.control_field("001")+ \
+                   '?ln='+ bfo.lang + '"><img src="' + icon_url + '" alt="" border="0"/></a>'
+            if CFG_BIBRANK_ALLOW_GIFT:
+                out += '<br/><a href="' + CFG_GIFT_QUERY + icon_url + '">'+label+'</a><br/>'
+                out += '<div style="white-space: nowrap;"><input name="imgURL" type="checkbox" value="+' + icon_url +'" />'+label_similar+'<input name="imgURL" type="checkbox" value="-' + icon_url +'" />'+label_disimilar+'</div></div>'
     return out
 
 def escape_values(bfo):

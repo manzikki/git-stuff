@@ -92,6 +92,11 @@ from invenio.bibrank_tag_based_indexer import \
 from invenio.bibrank_word_indexer import word_similarity
 from invenio.bibrank_citerank_indexer import citerank
 # pylint: enable=W0611
+<<<<<<< HEAD:modules/bibrank/lib/bibrank.py
+=======
+from invenio.bibrank_gift_indexer import gnuift_similarity
+
+>>>>>>> ead60a15776e511fd0583ada34101616409ac4b0:modules/bibrank/lib/bibrank.py
 
 nb_char_in_line = 50  # for verbose pretty printing
 chunksize = 1000 # default size of chunks that the records will be treated by
