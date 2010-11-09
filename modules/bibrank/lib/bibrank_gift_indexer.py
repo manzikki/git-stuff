@@ -19,16 +19,13 @@
 ## You should have received a copy of the GNU General Public License
 ## along with CDS Invenio; if not, write to the Free Software Foundation, Inc.,
 ## 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
-__revision__ = "$Id: bibrank_gift_indexer.py, 2009/12/10 10:59:01 Xin Exp $"
 
 import os, os.path, shutil, urllib, urllib2, xml.dom, sys
 import time, csv, re, warnings
 import distutils.dir_util as DU
 import xml.etree.ElementTree as ET
 import ConfigParser 
-
-if sys.hexversion < 0x2040000:
-    from sets import Set
+from sets import Set
 
 from invenio.bibformat_engine import *
 from invenio.shellutils import *
@@ -124,8 +121,10 @@ def gnuift_similarity(rank_method_code):
 
     write_message("Image urls are found at : %s" % 
         (icon_obj+"_"+icon_url_tag), stream=sys.stdout, verbose=3)
-    write_message("Redo all feature extraction?? : %s" %
-        op, stream=sys.stdout, verbose=3)
+    #write_message("Redo all feature extraction?? : %s" %
+    #    op, stream=sys.stdout, verbose=3)
+    #code too tricky, just redo always
+    op = "no"
     write_message("Gnuift features are stored in : %s" %
         CFG_GIFTINDEX_PREFIX, stream=sys.stdout, verbose=3)
     write_message("Gnuift config files are stored in: %s" %
@@ -135,7 +134,12 @@ def gnuift_similarity(rank_method_code):
         that contains the preseted value in label tag
     """
     icon_p = icon_obj+icon_label_tag+':'+icon_label_val
+    #quote
+    #icon_p = '"'+icon_p+'"'
+    write_message("Querying by p="+icon_p, verbose=9)
     recids = perform_request_search(p=icon_p)
+    recids = perform_request_search(p=icon_p) #I know, but the second call is more reliable.
+    write_message("Query returned "+str(len(recids))+" records.", verbose=9)
 
     """ if bibrank option is -R, all features need to be rebuilt
         remove all extracted features
@@ -158,7 +162,7 @@ def gnuift_similarity(rank_method_code):
     imgurl2recid = add_icon_recid(recids, icon_obj, icon_label_tag, 
                                   icon_label_val, icon_url_tag)
 
-    write_message("The number of urls taken is : %s" %
+    write_message("The number of urls found is : %s" %
         (len(imgurl2recid.keys())), stream=sys.stdout, verbose=3)
 
     """ Create the two folders for config file and index files """
@@ -186,7 +190,7 @@ def gnuift_similarity(rank_method_code):
         urllist.append(xmlnode.attrib["url-postfix"])
 
     write_message("The number of urls taken is : %s" %
-        (len(imgurl2recid.keys())), stream=sys.stdout, verbose=3)
+        (len(imgurl2recid.keys())), verbose=3)
 
     if os.path.isfile(tmp_ppm):
         os.remove(tmp_ppm)
@@ -202,10 +206,13 @@ def gnuift_similarity(rank_method_code):
                 imagexml.set("thumbnail-url-postfix", str(imgurl2recid[url]))
                 imagexml.set("feature-file-name", ftfname)
             except:
-                register_exception()
+                register_exception(prefix="imagexml error in GIFT indexing")
 
     """ write the xml tree into CFG_PATH_URL2FTS file """
     url2ftsET.write(CFG_PATH_URL2FTS)
+    #check if CFG_PATH_GIFTINDEXGENERATION exists. If not, fail.
+    if not os.path.isfile(CFG_PATH_GIFTINDEXGENERATION):
+        register_exception(prefix="file "+CFG_PATH_GIFTINDEXGENERATION+" does not exist")
     os.system(CFG_PATH_GIFTINDEXGENERATION+" "+CFG_GIFTINDEX_PREFIX+"/")
     # TODO : using run_shell_command???
     # run_shell_command(CFG_PATH_GIFTINDEXGENERATION+" %s", 
@@ -228,7 +235,7 @@ def is_image(filename):
     return filename[filename.rfind(".")+1:] in ext2conttype
 
 def add_url_recid(recids, fieldname):
-    """ Building a map of image url to recids. 
+    """ Build a map of image url to recids. 
         Fieldname indicate the field where image url can be found.
         Deprecated !! Replaced by add_icon_recid
     """
@@ -241,12 +248,12 @@ def add_url_recid(recids, fieldname):
                     ('documents.cern.ch' in url or \
                     'doc.cern.ch' in url or \
                     'preprints.cern.ch' in url):
-                    write_message("dropped urls: %s" %url, 
-                        stream=sys.stderr, verbose=0)    
+                    write_message("omitting url: %s" %url, verbose=9)    
                 else:
+                    write_message("including url : %s" %url, verbose=9)
                     tmp_dict[url] = recid
-    write_message("Number of valid url found: %s" %
-        (len(tmp_dict.keys())), stream=sys.stdout, verbose=3)
+    write_message("Number of urls to be indexed by gift found: %s" %
+        (len(tmp_dict.keys())) , verbose=3)
     return tmp_dict
 
 def add_icon_recid(recids, icon_obj, icon_label_tag, 
@@ -259,21 +266,20 @@ def add_icon_recid(recids, icon_obj, icon_label_tag,
     icon_url = ""
     for recid in recids:
         bfo = BibFormatObject(recid)
+        write_message("in rec %d, getting %s" % (recid, icon_obj), verbose=9)
         resources = bfo.fields(icon_obj)
         for resource in resources:
+            write_message("checking "+str(resource), verbose=9)
             icon_url = ""
+            res_ilt = resource.get(icon_label_tag, "")
+            write_message("resource's icon_label_tag is "+res_ilt+ \
+                          " icon label val is "+icon_label_val, verbose=9)
             if (resource.get(icon_label_tag, "") == icon_label_val):
                 icon_url = resource.get(icon_url_tag, "").replace(" ","")
-            if icon_url != "" and is_image(icon_url):
-                if ('documents.cern.ch' in icon_url or \
-                    'doc.cern.ch' in icon_url or \
-                    'preprints.cern.ch' in icon_url):
-                    write_message("dropped urls: %s" %icon_url, 
-                        stream=sys.stderr, verbose=0) 
-                else:
-                    tmp_dict[icon_url] = recid
+            if icon_url != "": #should add some extra checking 
+                tmp_dict[icon_url] = recid
     write_message("Number of valid url found: %s" %
-        (len(tmp_dict.keys())), stream=sys.stdout, verbose=3)
+        (len(tmp_dict.keys())), verbose=3)
     return tmp_dict
 
 def extract_features(url):
@@ -286,10 +292,8 @@ def extract_features(url):
         url, stream=sys.stdout, verbose=3) 
     urlsegs = url.split("/")
     filename = urlsegs[len(urlsegs)-1]
-    write_message("filename: %s\n" %filename %
-        url, stream=sys.stdout, verbose=3)
     tmp_img = CFG_TMPDIR + "/" + filename
-
+    write_message("tmp_img: "+tmp_img, verbose=3)
     """Downloading images by url"""
     f_resp = urllib2.urlopen(url)
     urllib.urlretrieve(f_resp.geturl(),tmp_img)
