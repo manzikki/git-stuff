@@ -22,9 +22,14 @@
 import cgi
 from invenio.bibdocfile import BibRecDocs
 from invenio.urlutils import create_html_link
+from invenio.config import CFG_BIBRANK_ALLOW_GIFT
+from invenio.config import CFG_SITE_URL
+# variables :
+CFG_GIFT_QUERY = CFG_SITE_URL + '/search?imgURL=+'
 
-def format_element(bfo, separator=" ", style='', img_style='', text_style='font-size:small', print_links='yes', max_photos='',
-           show_comment='yes', img_max_width='250px', display_all_version_links='yes'):
+def format_element(bfo, separator=" ", style='', img_style='', text_style='font-size:small',
+                   print_links='yes', max_photos='',
+                   show_comment='yes', img_max_width='250px', display_all_version_links='yes'):
     """
     Lists the photos of a record. Display the icon version, linked to
     its original version.
@@ -60,7 +65,7 @@ def format_element(bfo, separator=" ", style='', img_style='', text_style='font-
             else:
                 found_url = docfile.get_url()
         found_icons.sort()
-
+        img = ""
         if found_icons:
             additional_links = ''
             name = doc.get_docname()
@@ -77,12 +82,11 @@ def format_element(bfo, separator=" ", style='', img_style='', text_style='font-
                                                      linkattrd={'style': 'font-size:x-small'}, \
                                                      link_label="%s %s (%s)" % (format.strip('.').upper(), subformat, format_size(size))) \
                                     for (size, url, format, subformat) in additional_urls]
-            img = '<img src="%(icon_url)s" alt="%(name)s" style="max-width:%(img_max_width)s;_width:%(img_max_width)s;%(img_style)s" />' % \
+            img = img + '<img src="%(icon_url)s" alt="%(name)s" style="max-width:%(img_max_width)s;_width:%(img_max_width)s;%(img_style)s" />' % \
                   {'icon_url': cgi.escape(found_icons[0][1], True),
                    'name': cgi.escape(name, True),
                    'img_style': img_style,
                    'img_max_width': img_max_width}
-
             if print_links.lower() == 'yes':
                 img = '<a href="%s">%s</a>' % (cgi.escape(preview_url or found_url, True), img)
             if display_all_version_links.lower() == 'yes' and additional_links:
@@ -98,7 +102,9 @@ def format_element(bfo, separator=" ", style='', img_style='', text_style='font-
                    'img': img}
 
             photos.append(img)
-
+            #gift link if needed
+            if CFG_BIBRANK_ALLOW_GIFT:
+                photos.append("<strong>Find similar</strong>")
     return '<div>' + separator.join(photos) + '</div>'
 
 def escape_values(bfo):
