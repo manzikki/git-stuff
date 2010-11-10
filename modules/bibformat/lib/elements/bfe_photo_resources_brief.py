@@ -42,22 +42,22 @@ def format_element(bfo):
 
     out = ""
     for resource in resources:
-        if resource.get("x", "") == "icon":
+        #hunt for this in MARC: 
+        #8564_ $$uhttp://yourhost/record/7/files/9806033.gif?subformat=icon$$xicon
+        iconres = resource.get("x", "")
+        iconurl = resource.get("u", "").replace(" ","")
+        if iconres == "icon":
             out += '<a href="'+CFG_SITE_URL+'/record/'+bfo.control_field("001")+ \
-                   '?ln='+ bfo.lang + '"><img src="' + resource.get("u", "").replace(" ","") \
+                   '?ln='+ bfo.lang + '"><img src="' + iconurl \
                    + '" alt="" border="0"/></a>'
 
-        icon_url = ""
-        if resource.get("x", "") == "icon" and resource.get("u", "") == "":
-            icon_url = resource.get("q", "").replace(" ","")
-        if resource.get("x", "") == "jpgIcon":
-            icon_url = resource.get("u", "").replace(" ","")      
-        if icon_url != "":
-            out += '<div style="white-space: nowrap; float:left;"><a href="'+CFG_SITE_URL+'/record/'+bfo.control_field("001")+ \
-                   '?ln='+ bfo.lang + '"><img src="' + icon_url + '" alt="" border="0"/></a>'
             if CFG_BIBRANK_ALLOW_GIFT:
-                out += '<br/><a href="' + CFG_GIFT_QUERY + icon_url + '">'+label+'</a><br/>'
-                out += '<div style="white-space: nowrap;"><input name="imgURL" type="checkbox" value="+' + icon_url +'" />'+label_similar+'<input name="imgURL" type="checkbox" value="-' + icon_url +'" />'+label_disimilar+'</div></div>'
+                out += '<br/><a href="' + CFG_GIFT_QUERY + iconurl + '">'+label+'</a><br/>'
+                #similar/dissimilar links
+                #out += '<div style="white-space: nowrap;">'
+                #out += '<input name="imgURL" type="checkbox" value="+' + icon_url +'" />'
+                #out += label_similar+'<input name="imgURL" type="checkbox"'
+                #out +=  value="-' + icon_url +'" />'+label_disimilar+'</div></div>'
     return out
 
 def escape_values(bfo):

@@ -16,8 +16,6 @@ highlight="no" print_lang='en'/>
 
 <BFE_KEYWORDS separator=", " prefix="<br/> <i>Keyword</i>: "/>
 
-
-
 <BFE_PRIMARY_REPORT_NUMBER prefix="<br/><i>Picture number</i>: " />
 
 <BFE_FIELD tag="909CPt" prefix="<br/><I>Available picture(s)</i>: "/>

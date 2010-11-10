@@ -2360,7 +2360,8 @@ class Template:
 
     def tmpl_search_pageend(self, ln) :
         "page end for search page. Will display just before the page footer"
-        return """<input class="formbutton" type="submit" name="action_search" value="IMAGE SEARCH" /></form></div></div>"""
+        #return """<input class="formbutton" type="submit" name="action_search" value="IMAGE SEARCH" /></form></div></div>"""
+        return "</form></div></div>"
 
     def tmpl_print_warning(self, msg, type, prologue, epilogue):
         """Prints warning message and flushes output.

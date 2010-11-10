@@ -24,6 +24,7 @@ from invenio.bibdocfile import BibRecDocs
 from invenio.urlutils import create_html_link
 from invenio.config import CFG_BIBRANK_ALLOW_GIFT
 from invenio.config import CFG_SITE_URL
+from invenio.messages import gettext_set_language
 # variables :
 CFG_GIFT_QUERY = CFG_SITE_URL + '/search?imgURL=+'
 
@@ -47,6 +48,7 @@ def format_element(bfo, separator=" ", style='', img_style='', text_style='font-
     @param show_comment: if 'yes', display the comment of each photo
     @param display_all_version_links: if 'yes', print links to additional (sub)formats
     """
+    _ = gettext_set_language(bfo.lang)
     photos = []
     bibarchive = BibRecDocs(bfo.recID)
     bibdocs = bibarchive.list_bibdocs()
@@ -70,7 +72,7 @@ def format_element(bfo, separator=" ", style='', img_style='', text_style='font-
             additional_links = ''
             name = doc.get_docname()
             comment = doc.list_latest_files()[0].get_comment()
-
+            icon_url = cgi.escape(found_icons[0][1], True)
             preview_url = None
             if len(found_icons) > 1:
                 preview_url = found_icons[1][1]
@@ -83,7 +85,7 @@ def format_element(bfo, separator=" ", style='', img_style='', text_style='font-
                                                      link_label="%s %s (%s)" % (format.strip('.').upper(), subformat, format_size(size))) \
                                     for (size, url, format, subformat) in additional_urls]
             img = img + '<img src="%(icon_url)s" alt="%(name)s" style="max-width:%(img_max_width)s;_width:%(img_max_width)s;%(img_style)s" />' % \
-                  {'icon_url': cgi.escape(found_icons[0][1], True),
+                  {'icon_url': icon_url,
                    'name': cgi.escape(name, True),
                    'img_style': img_style,
                    'img_max_width': img_max_width}
@@ -104,7 +106,10 @@ def format_element(bfo, separator=" ", style='', img_style='', text_style='font-
             photos.append(img)
             #gift link if needed
             if CFG_BIBRANK_ALLOW_GIFT:
-                photos.append("<strong>Find similar</strong>")
+                #contruct GIFT search string that is
+                gurl = CFG_GIFT_QUERY+icon_url
+                fsim = _("Find similar images")
+                photos.append('<a href="'+gurl+'">'+fsim+'</a>')
     return '<div>' + separator.join(photos) + '</div>'
 
 def escape_values(bfo):
