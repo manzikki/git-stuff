@@ -4461,11 +4461,13 @@ def perform_request_search(req=None, cc=CFG_SITE_NAME, c=None, p="", f="", rg=CF
     # ====================================== GnuIFT added code start here =========================================
     # _ = gettext_set_language(ln)
     elif len(imgURL) > 0:
-        rank_list = get_similar_visual_recids(imgURL)
+        (rank_list, gift_error_msg) = get_similar_visual_recids(imgURL, ln)
         results_similar_relevances_prologue = "("
         results_similar_relevances_epilogue = ")"
         page_start(req, of, cc, aas, ln, getUid(req), _("Search Results"))
         if of.startswith("h"):
+            #print the warning/error. It is empty if no error..
+            req.write(gift_error_msg)
             req.write(create_search_box(cc, colls_to_display, p, f, rg, sf, so, sp, rm, of, ot, aas, ln, p1, f1, m1, op1,
                             p2, f2, m2, op2, p3, f3, m3, sc, pl, d1y, d1m, d1d, d2y, d2m, d2d, dt, jrec, ec, action))
         #req.write(str(len(rank_list[0])))
