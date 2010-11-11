@@ -93,6 +93,8 @@ from invenio.bibrank_word_indexer import word_similarity
 from invenio.bibrank_citerank_indexer import citerank
 # pylint: enable=W0611
 
+from invenio.bibrank_gift_indexer import gnuift_similarity
+
 nb_char_in_line = 50  # for verbose pretty printing
 chunksize = 1000 # default size of chunks that the records will be treated by
 base_process_size = 4500 # process base size
