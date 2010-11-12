@@ -20,6 +20,7 @@
 """
 __revision__ = "$Id$"
 
+import sys
 from invenio.config import CFG_SITE_URL
 from invenio.config import CFG_BIBRANK_ALLOW_GIFT
 from invenio.messages import gettext_set_language
@@ -42,11 +43,11 @@ def format_element(bfo):
 
     out = ""
     for resource in resources:
-        #hunt for this in MARC: 
+        #hunt for this in MARC:
         #8564_ $$uhttp://yourhost/record/7/files/9806033.gif?subformat=icon$$xicon
         iconres = resource.get("x", "")
         iconurl = resource.get("u", "").replace(" ","")
-        if iconres == "icon":
+        if iconres == "icon" and iconurl != "":
             out += '<a href="'+CFG_SITE_URL+'/record/'+bfo.control_field("001")+ \
                    '?ln='+ bfo.lang + '"><img src="' + iconurl \
                    + '" alt="" border="0"/></a>'
