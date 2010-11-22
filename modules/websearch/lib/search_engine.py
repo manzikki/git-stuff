@@ -37,6 +37,7 @@ import urllib
 import urlparse
 import zlib
 import sys
+import subprocess
 
 if sys.hexversion < 0x2040000:
     # pylint: disable=W0622
@@ -106,6 +107,7 @@ from invenio.search_engine_query_parser import SearchQueryParenthesisedParser, \
     SpiresToInvenioSyntaxConverter
 
 from invenio import webinterface_handler_config as apache
+from invenio.bibrank_gift_searcher import get_similar_visual_recids
 
 try:
     import invenio.template
@@ -3375,11 +3377,19 @@ def print_records(req, recIDs, jrec=1, rg=10, format='hb', ot='', ln=CFG_SITE_LA
             create_excel(recIDs=recIDs_to_print, req=req, ln=ln, ot=ot)
         else:
             # we are doing HTML output:
+            req.write('<input type="hidden" name="of" value="%s">' % cgi.escape(format))
             if format == 'hp' or format.startswith("hb_") or format.startswith("hd_"):
                 # portfolio and on-the-fly formats:
+                nPerLine = 6
+                n = 0
                 for irec in range(irec_max, irec_min, -1):
                     req.write(print_record(recIDs[irec], format, ot, ln, search_pattern=search_pattern,
                                            user_info=user_info, verbose=verbose, sf=sf, so=so, sp=sp, rm=rm))
+                    n=n+1
+	            if(n % nPerLine == 0):
+	                req.write('<br clear="all">')
+                req.write("<br clear=\"all\"/>")
+
             elif format.startswith("hb"):
                 # HTML brief format:
 
@@ -4131,7 +4141,7 @@ def log_query_info(action, p, f, colls, nb_records_found_total=-1):
 def perform_request_search(req=None, cc=CFG_SITE_NAME, c=None, p="", f="", rg=CFG_WEBSEARCH_DEF_RECORDS_IN_GROUPS, sf="", so="d", sp="", rm="", of="id", ot="", aas=0,
                            p1="", f1="", m1="", op1="", p2="", f2="", m2="", op2="", p3="", f3="", m3="", sc=0, jrec=0,
                            recid=-1, recidb=-1, sysno="", id=-1, idb=-1, sysnb="", action="", d1="",
-                           d1y=0, d1m=0, d1d=0, d2="", d2y=0, d2m=0, d2d=0, dt="", verbose=0, ap=0, ln=CFG_SITE_LANG, ec=None, tab=""):
+                           d1y=0, d1m=0, d1d=0, d2="", d2y=0, d2m=0, d2d=0, dt="", verbose=0, ap=0, ln=CFG_SITE_LANG, ec=None, tab="", imgURL=None):
     """Perform search or browse request, without checking for
        authentication.  Return list of recIDs found, if of=id.
        Otherwise create web page.
@@ -4300,6 +4310,8 @@ def perform_request_search(req=None, cc=CFG_SITE_NAME, c=None, p="", f="", rg=CF
 
           ec - list of external search engines to search as well
                (e.g. "SPIRES HEP").
+
+      imgURL - list of image selection for the image similarity search
     """
 
     selected_external_collections_infos = None
@@ -4348,6 +4360,8 @@ def perform_request_search(req=None, cc=CFG_SITE_NAME, c=None, p="", f="", rg=CF
     p3 = wash_pattern(p3)
     f3 = wash_field(f3)
     datetext1, datetext2 = wash_dates(d1, d1y, d1m, d1d, d2, d2y, d2m, d2d)
+    if imgURL is None:
+        imgURL = []
 
     # wash ranking method:
     if not is_method_valid(None, rm):
@@ -4444,6 +4458,27 @@ def perform_request_search(req=None, cc=CFG_SITE_NAME, c=None, p="", f="", rg=CF
                 print_records_prologue(req, of)
                 print_records_epilogue(req, of)
             return page_end(req, of, ln)
+
+    # FIXME: jump to another page after query search
+    # ====================================== GnuIFT added code start here =========================================
+    # _ = gettext_set_language(ln)
+    elif len(imgURL) > 0:
+        (rank_list, gift_error_msg) = get_similar_visual_recids(imgURL, ln)
+        results_similar_relevances_prologue = "("
+        results_similar_relevances_epilogue = ")"
+        page_start(req, of, cc, aas, ln, getUid(req), _("Search Results"))
+        if of.startswith("h"):
+            #print the warning/error. It is empty if no error..
+            req.write(gift_error_msg)
+            req.write(create_search_box(cc, colls_to_display, p, f, rg, sf, so, sp, rm, of, ot, aas, ln, p1, f1, m1, op1,
+                            p2, f2, m2, op2, p3, f3, m3, sc, pl, d1y, d1m, d1d, d2y, d2m, d2d, dt, jrec, ec, action))
+        #req.write(str(len(rank_list[0])))
+        req.write(print_search_info(p, f, sf, so, sp, rm, of, ot, cc, len(rank_list[0]),
+                                   jrec, rg, aas, ln, p1, p2, p3, f1, f2, f3, m1, m2, m3, op1, op2,
+                                   sc, pl_in_url, d1y, d1m, d1d, d2y, d2m, d2d, dt, 0))
+        print_records(req, rank_list[0], jrec, rg, of, ot, ln, rank_list[1], "(", ")", search_pattern=p, verbose=verbose)
+        # return page_end(req, of, ln)
+    # ====================================== GnuIFT added code end here ===========================================
 
     elif rm and p.startswith("recid:"):
         ## 3-ter - similarity search (or old-style citation search) needed
