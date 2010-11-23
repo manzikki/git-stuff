@@ -25,9 +25,6 @@ from invenio.config import CFG_SITE_URL
 from invenio.config import CFG_BIBRANK_ALLOW_GIFT
 from invenio.messages import gettext_set_language
 
-# variables :
-CFG_GIFT_QUERY = CFG_SITE_URL + '/search?imgURL=+'
-
 def format_element(bfo):
     """
     Prints html image and link to photo resources.
@@ -53,7 +50,13 @@ def format_element(bfo):
                    + '" alt="" border="0"/></a>'
 
             if CFG_BIBRANK_ALLOW_GIFT:
-                out += '<br/><a href="' + CFG_GIFT_QUERY + iconurl + '">'+label+'</a><br/>'
+                #for the url, change it to similarimage:recid:7/9806033.gif&rm=img
+                niceurl = iconurl
+                niceurl = niceurl.replace("/record/", "/search?p=similarimage:recid:")
+                niceurl = niceurl.replace("?subformat=icon", "")
+                niceurl = niceurl.replace("/files", "")
+                niceurl = niceurl + "&rm=img"
+                out += '<br/><a href="' + niceurl + '">'+label+'</a><br/>'
                 #similar/dissimilar links
                 #out += '<div style="white-space: nowrap;">'
                 #out += '<input name="imgURL" type="checkbox" value="+' + icon_url +'" />'

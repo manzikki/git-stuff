@@ -25,8 +25,6 @@ from invenio.urlutils import create_html_link
 from invenio.config import CFG_BIBRANK_ALLOW_GIFT
 from invenio.config import CFG_SITE_URL
 from invenio.messages import gettext_set_language
-# variables :
-CFG_GIFT_QUERY = CFG_SITE_URL + '/search?imgURL=+'
 
 def format_element(bfo, separator=" ", style='', img_style='', text_style='font-size:small',
                    print_links='yes', max_photos='',
@@ -107,7 +105,12 @@ def format_element(bfo, separator=" ", style='', img_style='', text_style='font-
             #gift link if needed
             if CFG_BIBRANK_ALLOW_GIFT:
                 #contruct GIFT search string that is
-                gurl = CFG_GIFT_QUERY+icon_url
+                #similarimage:recid:N/foo.gif&rm=img
+                gurl = icon_url
+                gurl = gurl.replace("/record/", "/search?p=similarimage:recid:")
+                gurl = gurl.replace("/files", "")
+                gurl = gurl.replace("?subformat=icon", "")
+                gurl = gurl+"&rm=img"
                 fsim = _("Find similar images")
                 photos.append('<a href="'+gurl+'">'+fsim+'</a>')
     return '<div>' + separator.join(photos) + '</div>'

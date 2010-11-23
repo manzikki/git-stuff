@@ -107,7 +107,7 @@ from invenio.search_engine_query_parser import SearchQueryParenthesisedParser, \
     SpiresToInvenioSyntaxConverter
 
 from invenio import webinterface_handler_config as apache
-from invenio.bibrank_gift_searcher import get_similar_visual_recids
+from invenio.bibrank_gift_searcher import get_similar_visual_recids, search_unit_similarimage
 
 try:
     import invenio.template
@@ -566,7 +566,6 @@ def create_basic_search_units(req, p, f, m=None, of='hb'):
                                'p'='phrase/substring', 'r'='regular expression',
                                'e'='exact value'.
         - Warnings are printed on req (when not None) in case of HTML output formats."""
-
     opfts = [] # will hold (o,p,f,t,h) units
 
     # FIXME: quick hack for the journal index
@@ -651,7 +650,8 @@ def create_basic_search_units(req, p, f, m=None, of='hb'):
                     fi, pi = string.split(pi, ":", 1)
                     fi = wash_field(fi)
                     # test whether fi is a real index code or a MARC-tag defined code:
-                    if fi in get_fieldcodes() or '00' <= fi[:2] <= '99':
+                    if fi in get_fieldcodes() or '00' <= fi[:2] <= '99' or fi == "similarimage":
+                        #similarimage is not field code, but behaves like it..
                         pass
                     else:
                         # it is not, so join it back:
@@ -1808,7 +1808,7 @@ def search_pattern(req=None, p=None, f=None, m=None, ap=0, of="id", verbose=0, l
             basic_search_units_hitsets.append(basic_search_unit_hitset)
         else:
             # stage 2-2: no hits found for this search unit, try to replace non-alphanumeric chars inside pattern:
-            if re.search(r'[^a-zA-Z0-9\s\:]', bsu_p) and bsu_f != 'refersto' and bsu_f != 'citedby':
+            if re.search(r'[^a-zA-Z0-9\s\:]', bsu_p) and bsu_f != 'refersto' and bsu_f != 'citedby' and bsu_f != 'similarimage':
                 if bsu_p.startswith('"') and bsu_p.endswith('"'): # is it ACC query?
                     bsu_pn = re.sub(r'[^a-zA-Z0-9\s\:]+', "*", bsu_p)
                 else: # it is WRD query
@@ -1980,7 +1980,6 @@ def search_unit(p, f=None, m=None):
 
        This function is suitable as a low-level API.
     """
-
     ## create empty output results set:
     set = HitSet()
     if not p: # sanity checking
@@ -1995,6 +1994,9 @@ def search_unit(p, f=None, m=None):
     elif f == 'citedby':
         # we are doing search by the citation count
         set = search_unit_citedby(p)
+    elif f == 'similarimage':
+        # we are doing search by image similarity
+        set = search_unit_similarimage(p)
     elif m == 'a' or m == 'r':
         # we are doing either phrase search or regexp search
         if f == 'fulltext':
@@ -4462,21 +4464,21 @@ def perform_request_search(req=None, cc=CFG_SITE_NAME, c=None, p="", f="", rg=CF
     # FIXME: jump to another page after query search
     # ====================================== GnuIFT added code start here =========================================
     # _ = gettext_set_language(ln)
-    elif len(imgURL) > 0:
-        (rank_list, gift_error_msg) = get_similar_visual_recids(imgURL, ln)
-        results_similar_relevances_prologue = "("
-        results_similar_relevances_epilogue = ")"
-        page_start(req, of, cc, aas, ln, getUid(req), _("Search Results"))
-        if of.startswith("h"):
-            #print the warning/error. It is empty if no error..
-            req.write(gift_error_msg)
-            req.write(create_search_box(cc, colls_to_display, p, f, rg, sf, so, sp, rm, of, ot, aas, ln, p1, f1, m1, op1,
-                            p2, f2, m2, op2, p3, f3, m3, sc, pl, d1y, d1m, d1d, d2y, d2m, d2d, dt, jrec, ec, action))
+    #elif len(imgURL) > 0:
+    #    (rank_list, gift_error_msg) = get_similar_visual_recids(imgURL, ln)
+    #    results_similar_relevances_prologue = "("
+    #    results_similar_relevances_epilogue = ")"
+    #    page_start(req, of, cc, aas, ln, getUid(req), _("Search Results"))
+    #    if of.startswith("h"):
+    #        #print the warning/error. It is empty if no error..
+    #        req.write(gift_error_msg)
+    #        req.write(create_search_box(cc, colls_to_display, p, f, rg, sf, so, sp, rm, of, ot, aas, ln, p1, f1, m1, op1,
+    #                        p2, f2, m2, op2, p3, f3, m3, sc, pl, d1y, d1m, d1d, d2y, d2m, d2d, dt, jrec, ec, action))
         #req.write(str(len(rank_list[0])))
-        req.write(print_search_info(p, f, sf, so, sp, rm, of, ot, cc, len(rank_list[0]),
-                                   jrec, rg, aas, ln, p1, p2, p3, f1, f2, f3, m1, m2, m3, op1, op2,
-                                   sc, pl_in_url, d1y, d1m, d1d, d2y, d2m, d2d, dt, 0))
-        print_records(req, rank_list[0], jrec, rg, of, ot, ln, rank_list[1], "(", ")", search_pattern=p, verbose=verbose)
+     #   req.write(print_search_info(p, f, sf, so, sp, rm, of, ot, cc, len(rank_list[0]),
+     #                              jrec, rg, aas, ln, p1, p2, p3, f1, f2, f3, m1, m2, m3, op1, op2,
+      #                             sc, pl_in_url, d1y, d1m, d1d, d2y, d2m, d2d, dt, 0))
+      #  print_records(req, rank_list[0], jrec, rg, of, ot, ln, rank_list[1], "(", ")", search_pattern=p, verbose=verbose)
         # return page_end(req, of, ln)
     # ====================================== GnuIFT added code end here ===========================================
 
