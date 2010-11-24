@@ -107,7 +107,7 @@ from invenio.search_engine_query_parser import SearchQueryParenthesisedParser, \
     SpiresToInvenioSyntaxConverter
 
 from invenio import webinterface_handler_config as apache
-from invenio.bibrank_gift_searcher import get_similar_visual_recids, search_unit_similarimage
+from invenio.bibrank_gift_searcher import search_unit_similarimage
 
 try:
     import invenio.template

@@ -19,68 +19,101 @@
 
 __revision__ = "$Id$"
 
+#import sys #for debug..
+import socket #for talking to the GIFT server
 import xml.etree.ElementTree as ET
-from invenio.config import CFG_PREFIX, CFG_PYLIBDIR, CFG_SITE_LANG
+from invenio.config import CFG_PREFIX, CFG_PYLIBDIR, CFG_SITE_LANG, CFG_SITE_URL
 from invenio.shellutils import *
-from invenio.bibtask import write_message
+#from invenio.bibtask import write_message
 from invenio.messages import gettext_set_language #for error messages
+from invenio.intbitset import intbitset
 
 # variables : (keep them identical with those in bibrank_gift_indexer)
 CFG_GIFTINDEX_PREFIX = CFG_PREFIX + "/var/gift-index-data"
 CFG_PATH_URL2FTS = CFG_GIFTINDEX_PREFIX+"/url2fts.xml"
 CFG_LIBDIR = CFG_PYLIBDIR + "/../"
-# The perl executable is used to run the query with GIFT perl API
-CFG_PERL_QUERY_SCRIPT = CFG_LIBDIR+"perl/invenio/gift_query_by_imgurl.pl"
+GIFT_HOST = "localhost"
+GIFT_PORT = 12700
 
-def get_similar_visual_recids(imgurls, ln=CFG_SITE_LANG):
-    """ This function is used to perform the query for image retrieval
-        @param imgurls: a list of image urls.
-                        Those started with '+' are similar images
-                        Those with '-' are disimilar images
-        @param ln: language
-        @return ([imageurl, relevance], error_string)
-        This function just use '&' to join them into one string
-        It is in perl script CFG_PERL_QUERY_SCRIPT the query is executed
+def talk_to_gift(imgurl, ln=CFG_SITE_LANG):
+    """
+    This is simple GIFT communication by sockets, only one image.
+    @param imgurl: an image that has been indexed by GIFT and in url2fts.xml
+    @param ln: language
+    @return ([[imageurl1, relevance1] [iurl2, rel2], ..], error_string)
+    """
+    data1 = """<?xml version="1.0" standalone="no"?>
+    <!DOCTYPE mrml SYSTEM "http://isrpc85.epfl.ch/Charmer/code/mrml.dtd">
+    <mrml session-id="d1">
+    <open-session user-name="x" session-name="y"/>
+    <get-collections/>
+    </mrml>
     """
     _ = gettext_set_language(ln)
-    imgurl =  '&'.join(imgurls)
-    # executable_line = "/opt/invenio/lib/perl/gift_query_by_imgurl.pl "+imgurl
-    errstr = "" #error string to output in case of problems
-    error_code, output, error_output = run_shell_command(
-        CFG_PERL_QUERY_SCRIPT+" %s %s", (imgurl, CFG_PATH_URL2FTS,))
-    if (error_code != 0):
-        write_message("Errcode "+str(error_code),  verbose=0)
-        errstr = "%s %s %s returned %s " % (CFG_PERL_QUERY_SCRIPT, imgurl,
-                                            CFG_PATH_URL2FTS, str(error_code))
-        errstr = _("Maybe GIFT is not running.")
-    """ First 100 similar records are returned by pairs.
-        It is in this form :
-           recid1  similarityValue1\n
-           recid2  similarityValue2\n
-           ......
-        The number of records returned is not parameterable.
-        But it can be done by editing the perl script directly.
-        In general 100 is enough as the max number of records
-        in the graphical interface is 100
-    """
-    lines = str.split(output, '\n')
-    if (len(lines) <= 1): #nothing found.. 
-        errstr = _("GIFT did not find anything matching your image(s). \
-                    Maybe your image has not been indexed yet.")
-    lines.reverse()
-    results = {}
-    results_gift_recIDs = []
-    results_gift_rels = []
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        client_socket.connect((GIFT_HOST, GIFT_PORT))
+    except:
+        myerr = _("Cannot contact GIFT. Is it running in ")+str(GIFT_PORT)
+        return ([], myerr)
 
-    for line in lines:
-        if (line):
-            ans = str.split(line)
-            results[0] = results_gift_recIDs.append(int(ans[0]))
-            results[1] = results_gift_rels.append(float(ans[1]))
+    client_socket.send(data1)
+    #read reply
+    reply = client_socket.recv(1024) #a short buffer
+    #because we only need to get the session id
+    client_socket.close()
+    #print reply
+    #get session and collection
+    startpos = reply.index(' session-id="')+13
+    endpos = reply.index('"', startpos+1)
+    session = reply[startpos:endpos]
+    startpos = reply.index(' collection-id="')+16
+    endpos = reply.index('"', startpos+1)
+    collection = reply[startpos:endpos]
 
-    results[0] = results_gift_recIDs
-    results[1] = results_gift_rels
-    return (results, errstr)
+    data2 = """<mrml session-id="%(sessionid)s">
+    <query-step
+    result-size="500"
+    result-cutoff="0"
+    collection-id="%(collection)s"
+    algorithm-id="%(algo)s">
+    <user-relevance-element-list>
+    <user-relevance-element
+     user-relevance="1"
+     image-location="%(image)s"/>
+    </user-relevance-element-list>
+    </query-step>
+    </mrml>
+    """ % { "sessionid" : session, "collection" : collection,
+            "algo": "adefault", "image": imgurl }
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect((GIFT_HOST, GIFT_PORT))
+    client_socket.send(data2)
+    reply = client_socket.recv(1024*1024) #the reply can be large
+    client_socket.close()
+    #parse calculated-similarity and thumbnail-location
+    recnum_rel_pairs = []
+    for line in reply.split("\n"):
+        if (line.count("calculated-similarity=") > 0):
+            startpos = line.index("calculated-similarity=")+23
+            endpos = line.index('"', startpos+1)
+            calc = line[startpos:endpos]
+            startpos = line.index("thumbnail-location=")+20
+            endpos = line.index('"', startpos+1)
+            tloc = line[startpos:endpos]
+            calc.strip()
+            tloc.strip()
+            #convert to nice data types
+            numloc = int(tloc)
+            numcalc = float(calc)
+            pair = [numloc, numcalc]
+            recnum_rel_pairs.append(pair)
+    myerr = ""
+    if not recnum_rel_pairs:
+        myerr = _("Nothing found. Maybe your image has not been indexed yet "+imgurl)
+    recnum_rel_pairs.reverse()
+    return (recnum_rel_pairs, myerr)
+
 
 def gift_read_url2fts():
     """ read url2fts.xml file, which is the mapping
@@ -97,3 +130,48 @@ def gift_read_url2fts():
         recpostfix = xmlnode.attrib["thumbnail-url-postfix"]
         url2ftsTable[urlpostfix] = recpostfix
     return url2ftsTable
+
+def search_unit_similarimage(p=None):
+    """
+    Return all potential records that have an image. The "real" ones are ranked by
+    get_img_ranking_for_bibrank
+    """
+    from invenio.search_engine import perform_request_search
+    images_with_icon = perform_request_search(p="8564_x:icon")
+    return intbitset(images_with_icon)
+
+def get_img_ranking_for_bibrank(p, hitset=None):
+    """
+    Do the real search. Sort the stuff in hitset accordingly. Return a tuple
+    that consist of
+    * pairs [recnum, relevance]
+    * opening parenthesis
+    * closing parenthesis
+    * an error message if needed
+    @param p: looks like: similarimage:recid:N/foo.gif
+    """
+    retobj = ([], '', '', '')
+    if p:
+        p = p.strip()
+        #remove recid: from the beginning..
+        p = p.replace("similarimage:recid:","")
+        p = p.strip()
+        #get the record number
+        recnum = 0
+        parts = p.split("/") #the first part should be a number, second: filename
+        if len(parts) < 2:
+            return retobj
+        try:
+            recnum = int(parts[0])
+        except:
+            myerr = "Could not handle search term"+p
+            retobj = ([], '', '', myerr)
+            return retobj
+        #ok.. construct
+        myurl = CFG_SITE_URL+"/record/"+parts[0]+"/files/"+parts[1]+"?subformat=icon"
+        #call gift
+        (id_rel_pairs, myerr) = talk_to_gift(myurl)
+        #TODO: read prefix, suffx from conf file
+        retobj = (id_rel_pairs, '(', ')', myerr)
+    return retobj
+
