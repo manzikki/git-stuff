@@ -276,6 +276,9 @@ def add_icon_recid(recids, icon_obj, icon_label_tag,
                           " icon label val is "+icon_label_val, verbose=9)
             if (resource.get(icon_label_tag, "") == icon_label_val):
                 icon_url = resource.get(icon_url_tag, "").replace(" ","")
+                write_message("match. got icon_url " + \
+                               str(icon_url)+ " using " + \
+                               icon_url_tag, verbose=9)
             if icon_url != "": #should add some extra checking 
                 tmp_dict[icon_url] = recid
     write_message("Number of valid url found: %s" %

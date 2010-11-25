@@ -23,7 +23,6 @@ __revision__ = "$Id$"
 import socket #for talking to the GIFT server
 import xml.etree.ElementTree as ET
 from invenio.config import CFG_PREFIX, CFG_PYLIBDIR, CFG_SITE_LANG, CFG_SITE_URL
-from invenio.shellutils import *
 #from invenio.bibtask import write_message
 from invenio.messages import gettext_set_language #for error messages
 from invenio.intbitset import intbitset
@@ -31,9 +30,27 @@ from invenio.intbitset import intbitset
 # variables : (keep them identical with those in bibrank_gift_indexer)
 CFG_GIFTINDEX_PREFIX = CFG_PREFIX + "/var/gift-index-data"
 CFG_PATH_URL2FTS = CFG_GIFTINDEX_PREFIX+"/url2fts.xml"
-CFG_LIBDIR = CFG_PYLIBDIR + "/../"
 GIFT_HOST = "localhost"
 GIFT_PORT = 12700
+p_search = "8564_x:icon" #search records that can hold an image by this,
+                         #verify using conf
+prefix = "(" #things that surround the similarity figure
+suffix = ")"
+try:
+    cfile = CFG_ETCDIR + "/bibrank/" + rank_method_code + ".cfg"
+    config = ConfigParser.ConfigParser()
+    config.readfp(open(cfile))
+    myobj = config.get("gnuift_similarity", "icon_obj")
+    mytag = config.get("gnuift_similarity", "icon_label_tag")
+    myval = config.get("gnuift_similarity", "icon_label_value")
+    p_search = myobj+mytag+":"+myval
+    prefix = config.get("gnuift_similarity", \
+                        "relevance_number_output_prologue")
+    prefix = config.get("gnuift_similarity", \
+                        "relevance_number_output_epilogue")
+except:
+    pass
+
 
 def talk_to_gift(imgurl, ln=CFG_SITE_LANG):
     """
@@ -137,7 +154,7 @@ def search_unit_similarimage(p=None):
     get_img_ranking_for_bibrank
     """
     from invenio.search_engine import perform_request_search
-    images_with_icon = perform_request_search(p="8564_x:icon")
+    images_with_icon = perform_request_search(p=p_search)
     return intbitset(images_with_icon)
 
 def get_img_ranking_for_bibrank(p, hitset=None):
@@ -171,7 +188,6 @@ def get_img_ranking_for_bibrank(p, hitset=None):
         myurl = CFG_SITE_URL+"/record/"+parts[0]+"/files/"+parts[1]+"?subformat=icon"
         #call gift
         (id_rel_pairs, myerr) = talk_to_gift(myurl)
-        #TODO: read prefix, suffx from conf file
-        retobj = (id_rel_pairs, '(', ')', myerr)
+        retobj = (id_rel_pairs, prefix, suffix, myerr)
     return retobj
 
