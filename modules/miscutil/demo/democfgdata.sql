@@ -1519,6 +1519,10 @@ INSERT INTO collection_rnkMETHOD (id_collection,id_rnkMETHOD,score) VALUES (15,5
 INSERT INTO rnkMETHOD (id,name,last_updated) VALUES (6,'citerank_pagerank_t','0000-00-00 00:00:00');
 INSERT INTO collection_rnkMETHOD (id_collection,id_rnkMETHOD,score) VALUES (15,6,50);
 
+INSERT INTO rnkMETHOD (id,name,last_updated) VALUES (7,'img','0000-00-00 00:00:00');
+INSERT INTO collection_rnkMETHOD (id_collection,id_rnkMETHOD,score) VALUES (8,4,1);
+INSERT INTO collection_rnkMETHOD (id_collection,id_rnkMETHOD,score) VALUES (1,4,1);
+
 INSERT INTO externalcollection (id, name) VALUES (1, 'Amazon');
 INSERT INTO externalcollection (id, name) VALUES (2, 'CERN EDMS');
 INSERT INTO externalcollection (id, name) VALUES (3, 'CERN Indico');

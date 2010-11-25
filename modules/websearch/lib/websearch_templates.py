@@ -162,6 +162,7 @@ class Template:
         'ap': (int, 1),
         'verbose': (int, 0),
         'ec': (list, []),
+        'imgURL': (list, []),
         }
 
     # ...and for search interfaces
@@ -2359,7 +2360,8 @@ class Template:
 
     def tmpl_search_pageend(self, ln) :
         "page end for search page. Will display just before the page footer"
-        return """</div></div>"""
+        #return """<input class="formbutton" type="submit" name="action_search" value="IMAGE SEARCH" /></form></div></div>"""
+        return "</form></div></div>"
 
     def tmpl_print_warning(self, msg, type, prologue, epilogue):
         """Prints warning message and flushes output.
@@ -2558,7 +2560,7 @@ class Template:
             out += "</tr></table>"
         else:
             out += "</div>"
-        out += "</form>"
+        #out += "</form>"
         return out
 
     def tmpl_print_hosted_search_info(self, ln, middle_only,

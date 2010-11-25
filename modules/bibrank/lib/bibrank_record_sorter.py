@@ -26,6 +26,7 @@ import math
 import re
 import ConfigParser
 import copy
+import sys
 
 from invenio.config import \
      CFG_SITE_LANG, \
@@ -36,6 +37,7 @@ from invenio.webpage import adderrorbox
 from invenio.bibindex_engine_stemmer import stem
 from invenio.bibindex_engine_stopwords import is_stopword
 from invenio.bibrank_citation_searcher import get_cited_by, get_cited_by_weight
+from invenio.bibrank_gift_searcher import get_img_ranking_for_bibrank
 from invenio.intbitset import intbitset
 
 
@@ -81,6 +83,11 @@ def create_rnkmethod_cache():
         if config.has_section(cfg_function):
             methods[rank_method_code] = {}
             methods[rank_method_code]["function"] = cfg_function
+            # methods[rank_method_code]["prefix"] = '('
+            # try:
+            #    methods[rank_method_code]["prefix"] = config.get(cfg_function, "relevance_number_output_prologue")
+            # except:
+            #    pass
             methods[rank_method_code]["prefix"] = config.get(cfg_function, "relevance_number_output_prologue")
             methods[rank_method_code]["postfix"] = config.get(cfg_function, "relevance_number_output_epilogue")
             methods[rank_method_code]["chars_alphanumericseparators"] = r"[1234567890\!\"\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\`\{\|\}\~]"
@@ -205,7 +212,13 @@ def rank_records(rank_method_code, rank_limit_relevance, hitset_global, pattern=
             if pattern and pattern[0]:
                 p = pattern[0][6:]
             result = find_citations(rank_method_code, p, hitset, verbose)
-
+        elif rank_method_code == "img": #we should not use the hard coded name, but there is
+            #no way of knowing what is the name for image ranking code
+            #p is the "search" like similarimage:recid:N/foo.gif
+            p = ""
+            if pattern and pattern[0]:
+                p = pattern[0]
+                result = get_img_ranking_for_bibrank(p, hitset)
         elif func_object:
             result = func_object(rank_method_code, pattern, hitset, rank_limit_relevance, verbose)
         else:
